@@ -1,5 +1,11 @@
 # 🚀 LaunchRDP
 
+[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
+[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)
+[![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)
+[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](../../stargazers)
+
 **LaunchRDP** is a Windows utility written in **Go** with a **Fyne** GUI.  
 It manages credentials (username + password) and host definitions, then dynamically generates `.rdp` files with all supported settings. With one click, LaunchRDP launches sessions directly using **mstsc.exe** (Microsoft Remote Desktop Connection).
 
