@@ -1,14 +1,11 @@
 # 🚀 LaunchRDP# 🚀 LaunchRDP# 🚀 LaunchRDP# 🚀 LaunchRDP
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
-
-[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](https://github.com/chrilep/LaunchRDP/blob/main/LICENSE)[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)
-
-[![Latest Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](https://github.com/chrilep/LaunchRDP/releases)[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)
-
-[![Open Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](https://github.com/chrilep/LaunchRDP/issues)[![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)
-
-[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](https://github.com/chrilep/LaunchRDP/stargazers)[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](../../stargazers)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
+[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](https://github.com/chrilep/LaunchRDP/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)
+[![Open Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](https://github.com/chrilep/LaunchRDP/issues)
+[![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)
+[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](https://github.com/chrilep/LaunchRDP/stargazers)
 
 **LaunchRDP** is a modern Windows Remote Desktop Connection Manager built with **Go** and a **WebView2** frontend. It provides a clean, web-based interface to manage RDP hosts and users, automatically generates `.rdp` files with precise window positioning, and launches connections with a single click.**LaunchRDP** is a modern Windows Remote Desktop Connection Manager built with **Go** and **WebView2**.
 
