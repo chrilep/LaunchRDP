@@ -1,14 +1,10 @@
 # 🚀 LaunchRDP# 🚀 LaunchRDP# 🚀 LaunchRDP
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
-
+[![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
 [![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)
-
-[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)[![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)
-
+[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)
 [![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)
-
-[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](../../stargazers)[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)[![Release](https://img.shields.io/github/v/release/chrilep/LaunchRDP)](../../releases)
+[![Stars](https://img.shields.io/github/stars/chrilep/LaunchRDP?style=social)](../../stargazers)
 
 **LaunchRDP** is a modern Windows Remote Desktop Connection Manager built with **Go** and **WebView2**. [![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)[![Issues](https://img.shields.io/github/issues/chrilep/LaunchRDP)](../../issues)
 
