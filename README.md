@@ -1,4 +1,4 @@
-# 🚀 LaunchRDP# 🚀 LaunchRDP# 🚀 LaunchRDP
+# 🚀 LaunchRDP
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/chrilep/LaunchRDP)](https://golang.org)
 [![License](https://img.shields.io/github/license/chrilep/LaunchRDP)](LICENSE)
