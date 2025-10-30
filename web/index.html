@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LaunchRDP</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>LaunchRDP</h1>
+        <p>Remote Desktop Connection Manager</p>
+      </div>
+
+      <!-- Navigation Bar -->
+      <div class="nav-bar">
+        <button class="nav-button active" onclick="showColumn(2)">Hosts</button>
+        <button class="nav-button" onclick="showColumn(3)">Users</button>
+        <div class="nav-indicator"></div>
+      </div>
+
+      <!-- 4-Column Layout Container -->
+      <div class="columns-container">
+        <!-- Column 1: Edit Host -->
+        <div class="column" id="column-1">
+          <div class="column-header">
+            <h2>Edit Host</h2>
+          </div>
+          <div class="column-content">
+            <form id="host-form">
+              <input type="hidden" id="host-id" />
+
+              <div class="form-section">
+                <h3>Connection Details</h3>
+                <div class="form-group">
+                  <label for="host-address">Address/IP/Hostname:</label>
+                  <input
+                    type="text"
+                    id="host-address"
+                    placeholder="hostname or IP"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="host-port">Port:</label>
+                  <input type="number" id="host-port" value="3389" required />
+                </div>
+                <div class="form-group">
+                  <label for="host-user">Assigned User/Credentials:</label>
+                  <select id="host-user" required></select>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <h3>Display Settings</h3>
+                <div class="form-group">
+                  <label for="host-display-mode">Display Mode:</label>
+                  <select
+                    id="host-display-mode"
+                    onchange="toggleWindowSettings()"
+                  >
+                    <option value="fullscreen">Fullscreen</option>
+                    <option value="window" selected>Window</option>
+                  </select>
+                </div>
+                <div id="window-settings">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="host-pos-x">Position X:</label>
+                      <input type="number" id="host-pos-x" value="100" />
+                    </div>
+                    <div class="form-group">
+                      <label for="host-pos-y">Position Y:</label>
+                      <input type="number" id="host-pos-y" value="100" />
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="host-width">Window Width:</label>
+                      <input type="number" id="host-width" value="1200" />
+                    </div>
+                    <div class="form-group">
+                      <label for="host-height">Window Height:</label>
+                      <input type="number" id="host-height" value="800" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Calculation Info -->
+              <div class="form-section">
+                <h3>Calculation Info</h3>
+                <div id="calculation-info" class="calculation-info">
+                  <div class="calculation-row">
+                    <span class="calculation-label">RDP Client Size:</span>
+                    <span id="client-size" class="calculation-value">-</span>
+                  </div>
+                  <div class="calculation-row">
+                    <span class="calculation-label">Window Borders:</span>
+                    <span id="window-borders" class="calculation-value">-</span>
+                  </div>
+                  <div class="calculation-row">
+                    <span class="calculation-label">WinPosStr:</span>
+                    <span id="winpos-str" class="calculation-value">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <h3>Features</h3>
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input type="checkbox" id="host-clipboard" checked />
+                    <span>Clipboard Access</span>
+                  </label>
+                </div>
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input type="checkbox" id="host-drives" />
+                    <span>Drives Redirect</span>
+                  </label>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="column-footer">
+            <button
+              class="btn btn-success ok-button"
+              onclick="saveHostAndReturn()"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+
+        <!-- Column 2: Hosts List -->
+        <div class="column" id="column-2">
+          <div class="column-header">
+            <h2>Hosts</h2>
+          </div>
+          <div class="column-content">
+            <div id="hosts-list"></div>
+            <button class="btn btn-primary add-button" onclick="addNewHost()">
+              + Add Host
+            </button>
+          </div>
+        </div>
+
+        <!-- Column 3: Users List -->
+        <div class="column" id="column-3">
+          <div class="column-header">
+            <h2>Users</h2>
+          </div>
+          <div class="column-content">
+            <div id="users-list"></div>
+            <button class="btn btn-primary add-button" onclick="addNewUser()">
+              + Add User
+            </button>
+          </div>
+        </div>
+
+        <!-- Column 4: Edit User -->
+        <div class="column" id="column-4">
+          <div class="column-header">
+            <h2>Edit User</h2>
+          </div>
+          <div class="column-content">
+            <form id="user-form">
+              <input type="hidden" id="user-id" />
+
+              <div class="form-section">
+                <h3>Credentials</h3>
+                <div class="form-group">
+                  <label for="user-login">Login:</label>
+                  <input
+                    type="text"
+                    id="user-login"
+                    placeholder="username"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="user-domain">Domain:</label>
+                  <input
+                    type="text"
+                    id="user-domain"
+                    placeholder="domain.com (optional)"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="user-password">Password:</label>
+                  <input
+                    type="password"
+                    id="user-password"
+                    placeholder="Password"
+                    required
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="column-footer">
+            <button
+              class="btn btn-success ok-button"
+              onclick="saveUserAndReturn()"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Status Messages -->
+      <div id="status-container"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+  </body>
+</html>
