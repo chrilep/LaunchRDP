@@ -25,6 +25,8 @@ resource.syso
 /temp/
 launchrdp
 launchrdp.exe
+launchrdp.7z
+launchrdp.zip
 
 # VS Code files for those working on multiple tools
 .vscode/*
