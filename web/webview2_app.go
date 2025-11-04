@@ -59,7 +59,9 @@ func (app *WebView2App) Run() error {
 	w.Navigate(url)
 
 	// Measure window border information after window is shown
-	go app.measureWindowBorders(w)
+	go func() {
+		app.measureWindowBorders()
+	}()
 
 	fmt.Printf("✓ LaunchRDP WebView2 window opened\n")
 	fmt.Printf("Close the window to exit the application\n")
@@ -72,7 +74,7 @@ func (app *WebView2App) Run() error {
 }
 
 // measureWindowBorders measures the window borders after the window is displayed
-func (app *WebView2App) measureWindowBorders(w webview2.WebView) {
+func (app *WebView2App) measureWindowBorders() {
 	// Wait a bit for the window to be fully rendered
 	time.Sleep(1 * time.Second)
 
