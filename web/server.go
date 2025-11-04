@@ -247,11 +247,11 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.Log(true, "API GET: Loaded %d hosts from storage", len(hosts))
+		logging.Log(true, "API GET: Loaded", len(hosts), "hosts from storage")
 		if len(hosts) > 0 {
 			// Debug: Show all hosts with their WindowWidth/WindowHeight values
 			for i, host := range hosts {
-				logging.Log(true, "API GET: Host[%d] %s - WindowWidth: %d, WindowHeight: %d", i, host.Name, host.WindowWidth, host.WindowHeight)
+				logging.Log(true, "API GET: Host #", i, host.Name, "WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
 			}
 		}
 		json.NewEncoder(w).Encode(hosts)
@@ -289,8 +289,8 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		host.RedirectDrives = hostData.RedirectDrives
 		host.DisplayMode = hostData.DisplayMode
 
-		logging.Log(true, "API POST: Received hostData - WindowWidth: %d, WindowHeight: %d", hostData.WindowWidth, hostData.WindowHeight)
-		logging.Log(true, "API POST: Created host - WindowWidth: %d, WindowHeight: %d", host.WindowWidth, host.WindowHeight)
+		logging.Log(true, "API POST: Received hostData - WindowWidth:", hostData.WindowWidth, "WindowHeight:", hostData.WindowHeight)
+		logging.Log(true, "API POST: Created host - WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
 
 		// Save host
 		hosts, _ := s.storage.LoadHosts()

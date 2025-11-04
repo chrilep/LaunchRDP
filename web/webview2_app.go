@@ -43,9 +43,9 @@ func (app *WebView2App) Run() error {
 		AutoFocus: true,
 		WindowOptions: webview2.WindowOptions{
 			Title:  "LaunchRDP",
-			Width:  400, // Back to original size for testing
-			Height: 600, // Back to original size for testing
-			IconId: 2,   // Use default icon
+			Width:  275,
+			Height: 750,
+			IconId: 2, // Use default icon
 		},
 	})
 

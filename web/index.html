@@ -26,6 +26,12 @@
         <div class="column" id="column-1">
           <div class="column-header">
             <h2>Edit Host</h2>
+            <button
+              class="btn btn-success btn-sm"
+              onclick="saveHostAndReturn()"
+            >
+              OK
+            </button>
           </div>
           <div class="column-content">
             <form id="host-form">
@@ -124,26 +130,18 @@
               </div>
             </form>
           </div>
-          <div class="column-footer">
-            <button
-              class="btn btn-success ok-button"
-              onclick="saveHostAndReturn()"
-            >
-              OK
-            </button>
-          </div>
         </div>
 
         <!-- Column 2: Hosts List -->
         <div class="column" id="column-2">
           <div class="column-header">
             <h2>Hosts</h2>
+            <button class="btn btn-primary btn-sm" onclick="addNewHost()">
+              + Add Host
+            </button>
           </div>
           <div class="column-content">
             <div id="hosts-list"></div>
-            <button class="btn btn-primary add-button" onclick="addNewHost()">
-              + Add Host
-            </button>
           </div>
         </div>
 
@@ -151,12 +149,12 @@
         <div class="column" id="column-3">
           <div class="column-header">
             <h2>Users</h2>
+            <button class="btn btn-primary btn-sm" onclick="addNewUser()">
+              + Add User
+            </button>
           </div>
           <div class="column-content">
             <div id="users-list"></div>
-            <button class="btn btn-primary add-button" onclick="addNewUser()">
-              + Add User
-            </button>
           </div>
         </div>
 
@@ -164,6 +162,12 @@
         <div class="column" id="column-4">
           <div class="column-header">
             <h2>Edit User</h2>
+            <button
+              class="btn btn-success btn-sm"
+              onclick="saveUserAndReturn()"
+            >
+              OK
+            </button>
           </div>
           <div class="column-content">
             <form id="user-form">
@@ -199,14 +203,6 @@
                 </div>
               </div>
             </form>
-          </div>
-          <div class="column-footer">
-            <button
-              class="btn btn-success ok-button"
-              onclick="saveUserAndReturn()"
-            >
-              OK
-            </button>
           </div>
         </div>
       </div>

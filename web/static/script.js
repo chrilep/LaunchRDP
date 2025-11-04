@@ -199,7 +199,7 @@ function populateHostForm(host) {
   toggleWindowSettings();
 
   // Update calculation info with loaded values
-  updateCalculationInfo(windowWidth, windowHeight);
+  updateCalculationInfo(windowWidth, windowHeight, host.win_pos_str);
 }
 
 function validateHostForm() {
@@ -368,13 +368,13 @@ function renderHosts() {
                  }</div>
                </div>
                <div class="list-item-actions">
-                 <button class="btn btn-sm btn-success" onclick="launchConnection('${
+                 <button class="btn btn-sm btn-success" title="Launch" onclick="launchConnection('${
                    host.id
                  }')">Launch</button>
-                 <button class="btn btn-sm btn-primary" onclick="editHost('${
+                 <button class="btn btn-sm btn-primary" title="Edit host" onclick="editHost('${
                    host.id
                  }')">Edit</button>
-                 <button class="btn btn-sm btn-danger" onclick="removeHost('${
+                 <button class="btn btn-sm btn-danger" title="Remove host" onclick="removeHost('${
                    host.id
                  }')">Remove</button>
                </div>
@@ -593,7 +593,11 @@ function calculateRdpClientSize(windowWidth, windowHeight) {
 }
 
 // Update calculation info display
-function updateCalculationInfo(windowWidth, windowHeight) {
+function updateCalculationInfo(
+  windowWidth,
+  windowHeight,
+  actualWinPosStr = null
+) {
   const clientSize = calculateRdpClientSize(windowWidth, windowHeight);
 
   // Update client size display
@@ -610,17 +614,23 @@ function updateCalculationInfo(windowWidth, windowHeight) {
     windowBordersElement.textContent = "Not available";
   }
 
-  // Calculate and display WinPosStr (simplified version for display)
+  // Display actual WinPosStr from host data, or calculate if not available
   const winPosStrElement = document.getElementById("winpos-str");
   if (winPosStrElement) {
-    const x = 0; // Default position
-    const y = 1; // Default position
-    const left = x + (windowBorderInfo ? windowBorderInfo.left : 0);
-    const top = y + (windowBorderInfo ? windowBorderInfo.top : 0);
-    const right = left + clientSize.clientWidth;
-    const bottom = top + clientSize.clientHeight;
+    if (actualWinPosStr) {
+      // Use the actual WinPosStr from the host data
+      winPosStrElement.textContent = actualWinPosStr;
+    } else {
+      // Calculate and display WinPosStr (for when user is editing values)
+      const x = 0; // Default position
+      const y = 1; // Default position
+      const left = x + (windowBorderInfo ? windowBorderInfo.left : 0);
+      const top = y + (windowBorderInfo ? windowBorderInfo.top : 0);
+      const right = left + clientSize.clientWidth;
+      const bottom = top + clientSize.clientHeight;
 
-    winPosStrElement.textContent = `${x},${y},${left},${top},${right},${bottom}`;
+      winPosStrElement.textContent = `${x},${y},${left},${top},${right},${bottom}`;
+    }
   }
 }
 
