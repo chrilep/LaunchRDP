@@ -5,7 +5,7 @@ import "fmt"
 const (
 	AppName    = "LaunchRDP"
 	ID         = "com.chrilep.launchrdp"
-	Version    = "1.2.0.7"
+	Version    = "1.3.0.1"
 	Author     = "Lancer"
 	Repository = "https://github.com/chrilep/LaunchRDP"
 )
