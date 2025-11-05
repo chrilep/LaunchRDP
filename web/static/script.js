@@ -445,15 +445,19 @@ function populateUserForm(user) {
 function validateUserForm() {
   const login = document.getElementById("user-login").value.trim();
   const password = document.getElementById("user-password").value;
+  const userId = document.getElementById("user-id").value;
 
   if (!login) {
     showAlert("Login is required", "error");
     return false;
   }
-  if (!password) {
-    showAlert("Password is required", "error");
+
+  // Only require password for new users (no userId)
+  if (!userId && !password) {
+    showAlert("Password is required for new users", "error");
     return false;
   }
+
   return true;
 }
 

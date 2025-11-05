@@ -39,7 +39,8 @@ func NewServer(port int) (*Server, error) {
 
 // Start starts the web server
 func (s *Server) Start() error {
-	logging.Log(true, "Starting web server on port", s.port)
+	debug := true
+	logging.Log(debug, "Starting web server on port", s.port)
 
 	// Create new UI instance
 	ui, err := NewUI()
@@ -59,7 +60,7 @@ func (s *Server) Start() error {
 
 	// Start server - bind only to localhost to avoid firewall prompts
 	addr := fmt.Sprintf("localhost:%d", s.port)
-	logging.Log(true, "Web server listening on", addr)
+	logging.Log(debug, "Web server listening on", addr)
 
 	// No browser opening - WebView2 only!
 	return http.ListenAndServe(addr, mux)
@@ -67,6 +68,7 @@ func (s *Server) Start() error {
 
 // API handlers
 func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
+	debug := true
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
@@ -79,7 +81,7 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(users)
 
 	case "POST":
-		logging.Log(true, "API: Creating new user")
+		logging.Log(debug, "API: Creating new user")
 		var userData struct {
 			Username string `json:"username"`
 			Login    string `json:"login"`
@@ -92,7 +94,7 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		logging.Log(true, "User data received - Username:", userData.Username, "Domain:", userData.Domain)
+		logging.Log(debug, "User data received - Username:", userData.Username, "Domain:", userData.Domain)
 
 		// Create new user
 		user := models.NewUser(userData.Username, userData.Username)
@@ -101,7 +103,7 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 
 		// Encrypt password
 		if userData.Password != "" {
-			logging.Log(true, "Encrypting password with DPAPI")
+			logging.Log(debug, "Encrypting password with DPAPI")
 			encryptedPassword, err := s.credManager.EncryptPasswordDPAPI(userData.Password)
 			if err != nil {
 				logging.Log(true, "ERROR: Failed to encrypt password:", err)
@@ -109,21 +111,21 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			user.EncryptedPassword = encryptedPassword
-			logging.Log(true, "Password encrypted successfully")
+			logging.Log(debug, "Password encrypted successfully")
 
 			// Store in Windows Credential Store
-			logging.Log(true, "Storing credentials in Windows Credential Store")
+			logging.Log(debug, "Storing credentials in Windows Credential Store")
 			hosts, _ := s.storage.LoadHosts()
 			for _, host := range hosts {
 				if host.UserID == user.ID {
-					logging.Log(true, "Storing credential for host:", host.Address, "user:", user.Username)
+					logging.Log(debug, "Storing credential for host:", host.Address, "user:", user.Username)
 					s.credManager.StoreCredential(host.Address, user.Username, userData.Password)
 				}
 			}
 		}
 
 		// Save user
-		logging.Log(true, "Saving user to storage")
+		logging.Log(debug, "Saving user to storage")
 		users, _ := s.storage.LoadUsers()
 		users = append(users, user)
 		if err := s.storage.SaveUsers(users); err != nil {
@@ -131,7 +133,7 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.Log(true, "User saved successfully with ID:", user.ID)
+		logging.Log(debug, "User saved successfully with ID:", user.ID)
 
 		json.NewEncoder(w).Encode(user)
 
@@ -141,6 +143,8 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUserByID(w http.ResponseWriter, r *http.Request) {
+	debug := false
+
 	w.Header().Set("Content-Type", "application/json")
 
 	// Extract user ID from URL
@@ -175,22 +179,31 @@ func (s *Server) handleUserByID(w http.ResponseWriter, r *http.Request) {
 				users[i].Domain = userData.Domain
 				users[i].ModifiedAt = time.Now()
 
-				// Update password if provided
-				if userData.Password != "" {
-					encryptedPassword, err := s.credManager.EncryptPasswordDPAPI(userData.Password)
-					if err != nil {
-						http.Error(w, "Failed to encrypt password: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					users[i].EncryptedPassword = encryptedPassword
+				// Handle password update (including migration and reuse of existing password)
+				newEncryptedPassword, migrated, err := s.credManager.UpdateUserCredentialsWithMigration(
+					users[i].EncryptedPassword, // Old encrypted password
+					userData.Password,          // New plaintext password (can be empty)
+				)
+				if err != nil {
+					http.Error(w, "Failed to update password: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 
-					// Update Windows Credential Store
+				// Update the encrypted password (may be unchanged, migrated, or new)
+				users[i].EncryptedPassword = newEncryptedPassword
+
+				// If a new password was provided, update Windows Credential Store
+				if userData.Password != "" {
 					hosts, _ := s.storage.LoadHosts()
 					for _, host := range hosts {
 						if host.UserID == userID {
 							s.credManager.StoreCredential(host.Address, userData.Username, userData.Password)
 						}
 					}
+				}
+
+				if migrated {
+					logging.Log(debug, "User password was migrated from AES to DPAPI during edit")
 				}
 
 				// Save users
@@ -238,6 +251,7 @@ func (s *Server) handleUserByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
+	debug := true
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
@@ -247,11 +261,11 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.Log(true, "API GET: Loaded", len(hosts), "hosts from storage")
+		logging.Log(debug, "API GET: Loaded", len(hosts), "hosts from storage")
 		if len(hosts) > 0 {
 			// Debug: Show all hosts with their WindowWidth/WindowHeight values
 			for i, host := range hosts {
-				logging.Log(true, "API GET: Host #", i, host.Name, "WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
+				logging.Log(debug, "API GET: Host #", i, host.Name, "WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
 			}
 		}
 		json.NewEncoder(w).Encode(hosts)
@@ -289,8 +303,8 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		host.RedirectDrives = hostData.RedirectDrives
 		host.DisplayMode = hostData.DisplayMode
 
-		logging.Log(true, "API POST: Received hostData - WindowWidth:", hostData.WindowWidth, "WindowHeight:", hostData.WindowHeight)
-		logging.Log(true, "API POST: Created host - WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
+		logging.Log(debug, "API POST: Received hostData - WindowWidth:", hostData.WindowWidth, "WindowHeight:", hostData.WindowHeight)
+		logging.Log(debug, "API POST: Created host - WindowWidth:", host.WindowWidth, "WindowHeight:", host.WindowHeight)
 
 		// Save host
 		hosts, _ := s.storage.LoadHosts()
@@ -308,6 +322,7 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHostByID(w http.ResponseWriter, r *http.Request) {
+	debug := true
 	w.Header().Set("Content-Type", "application/json")
 
 	// Extract host ID from URL
@@ -360,8 +375,8 @@ func (s *Server) handleHostByID(w http.ResponseWriter, r *http.Request) {
 				hosts[i].DisplayMode = hostData.DisplayMode
 				hosts[i].ModifiedAt = time.Now()
 
-				logging.Log(true, "API PUT: Received hostData - WindowWidth: %d, WindowHeight: %d", hostData.WindowWidth, hostData.WindowHeight)
-				logging.Log(true, "API PUT: Updated host - WindowWidth: %d, WindowHeight: %d", hosts[i].WindowWidth, hosts[i].WindowHeight)
+				logging.Log(debug, "API PUT: Received hostData - WindowWidth:", hostData.WindowWidth, "WindowHeight:", hostData.WindowHeight)
+				logging.Log(debug, "API PUT: Updated host - WindowWidth:", hosts[i].WindowWidth, "WindowHeight:", hosts[i].WindowHeight)
 
 				// Save hosts
 				if err := s.storage.SaveHosts(hosts); err != nil {
@@ -408,7 +423,8 @@ func (s *Server) handleHostByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
-	logging.Log(true, "API: Launching RDP connection")
+	debug := true
+	logging.Log(debug, "API: Launching RDP connection")
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -423,7 +439,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	logging.Log(true, "Launch request for host ID:", launchData.HostID)
+	logging.Log(debug, "Launch request for host ID:", launchData.HostID)
 
 	// Load data
 	hosts, err := s.storage.LoadHosts()
@@ -439,12 +455,12 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find host
-	logging.Log(true, "Searching for host in", len(hosts), "loaded hosts")
+	logging.Log(debug, "Searching for host in", len(hosts), "loaded hosts")
 	var selectedHost *models.Host
 	for _, host := range hosts {
 		if host.ID == launchData.HostID {
 			selectedHost = &host
-			logging.Log(true, "Found host:", host.Name, "at", host.Address)
+			logging.Log(debug, "Found host:", host.Name, "at", host.Address)
 			break
 		}
 	}
@@ -456,12 +472,12 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find user
-	logging.Log(true, "Searching for user with ID:", selectedHost.UserID)
+	logging.Log(debug, "Searching for user with ID:", selectedHost.UserID)
 	var selectedUser *models.User
 	for _, user := range users {
 		if user.ID == selectedHost.UserID {
 			selectedUser = &user
-			logging.Log(true, "Found user:", user.Username)
+			logging.Log(debug, "Found user:", user.Username)
 			break
 		}
 	}
@@ -473,13 +489,13 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Launch RDP
-	logging.Log(true, "Launching RDP connection for host:", selectedHost.Name, "user:", selectedUser.Username)
+	logging.Log(debug, "Launching RDP connection for host:", selectedHost.Name, "user:", selectedUser.Username)
 	if err := s.rdpGenerator.LaunchHost(*selectedHost, *selectedUser); err != nil {
 		logging.Log(true, "ERROR: Failed to launch RDP:", err)
 		http.Error(w, "Failed to launch RDP: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	logging.Log(true, "RDP connection launched successfully")
+	logging.Log(debug, "RDP connection launched successfully")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "launched"})

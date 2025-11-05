@@ -1,13 +1,8 @@
 package credentials
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -57,7 +52,9 @@ func NewCredentialManager() *CredentialManager {
 // StoreCredential stores a credential in Windows Credential Manager as Domain credential
 // Uses cmdkey format for domain credentials: cmdkey /add:TERMSRV/hostname /user:username /pass:password
 func (cm *CredentialManager) StoreCredential(hostname, username, password string) error {
-	logging.Log(true, "StoreCredential called for hostname:", hostname, "username:", username)
+	debug := false
+
+	logging.Log(debug, "StoreCredential called for hostname:", hostname, "username:", username)
 
 	// Skip invalid hostnames
 	if hostname == "" {
@@ -67,11 +64,21 @@ func (cm *CredentialManager) StoreCredential(hostname, username, password string
 
 	// Use /add for domain credentials (Windows-Anmeldeinformationen)
 	cmdArgs := []string{"/add:TERMSRV/" + hostname, "/user:" + username, "/pass:" + password}
-	logging.Log(true, "Executing cmdkey with args:", strings.Join(cmdArgs, " "))
+	// SECURITY: Never log the actual cmdkey args as they contain the password in plaintext
+	logging.Log(debug, "Executing cmdkey for TERMSRV/"+hostname+" with user "+username)
 
 	cmd := exec.Command("cmdkey", cmdArgs...)
 
-	logging.Log(true, "Running cmdkey command...")
+	// Clear password from memory as soon as possible
+	for i := range cmdArgs {
+		if strings.Contains(cmdArgs[i], "/pass:") {
+			cmdArgs[i] = "/pass:***CLEARED***"
+		}
+	}
+	// Clear the original password parameter
+	password = ""
+
+	logging.Log(debug, "Running cmdkey command...")
 	output, err := cmd.CombinedOutput()
 	outputStr := strings.TrimSpace(string(output))
 
@@ -80,103 +87,15 @@ func (cm *CredentialManager) StoreCredential(hostname, username, password string
 		return fmt.Errorf("failed to store credential for %s: %w, output: %s", hostname, err, outputStr)
 	}
 
-	logging.Log(true, "cmdkey completed successfully, output:", outputStr)
-	fmt.Printf("Successfully stored domain credential for %s with user %s\n", hostname, username)
+	logging.Log(debug, "cmdkey completed successfully, output:", outputStr)
+	logging.Log(debug, "Successfully stored domain credential for", hostname, "with user", username)
 	return nil
-}
-
-// getEncryptionKey generates a machine-specific encryption key
-func (cm *CredentialManager) getEncryptionKey() ([]byte, error) {
-	// Use machine hostname as part of the key generation
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a 32-byte key from hostname (pad or truncate)
-	key := []byte(hostname + "LaunchRDP_Secret_Key_12345")
-	if len(key) > 32 {
-		key = key[:32]
-	} else {
-		for len(key) < 32 {
-			key = append(key, 'X')
-		}
-	}
-	return key, nil
-}
-
-// EncryptPassword encrypts a password using AES
-func (cm *CredentialManager) EncryptPassword(password string) (string, error) {
-	if password == "" {
-		return "", nil
-	}
-
-	key, err := cm.getEncryptionKey()
-	if err != nil {
-		return "", err
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
-
-	ciphertext := gcm.Seal(nonce, nonce, []byte(password), nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
-}
-
-// DecryptPassword decrypts a password using AES
-func (cm *CredentialManager) DecryptPassword(encryptedPassword string) (string, error) {
-	if encryptedPassword == "" {
-		return "", nil
-	}
-
-	key, err := cm.getEncryptionKey()
-	if err != nil {
-		return "", err
-	}
-
-	ciphertext, err := base64.StdEncoding.DecodeString(encryptedPassword)
-	if err != nil {
-		return "", err
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-
-	nonceSize := gcm.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return "", fmt.Errorf("ciphertext too short")
-	}
-
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", err
-	}
-
-	return string(plaintext), nil
 }
 
 // StoreGenericCredential stores a generic RDP credential for a username
 func (cm *CredentialManager) StoreGenericCredential(username, password string) error {
+	debug := false
+
 	// Use a generic target that works with RDP
 	target := fmt.Sprintf("TERMSRV/RDP_%s", username)
 
@@ -187,7 +106,7 @@ func (cm *CredentialManager) StoreGenericCredential(username, password string) e
 		return fmt.Errorf("failed to store generic credential: %w, output: %s", err, string(output))
 	}
 
-	fmt.Printf("Successfully stored generic credential for user %s at target %s\n", username, target)
+	logging.Log(debug, "Successfully stored generic credential for user", username, "at target", target)
 	return nil
 }
 
@@ -269,14 +188,18 @@ func (cm *CredentialManager) HasCredential(hostname string) bool {
 // DPAPI (Data Protection API) ties encryption to the current user + machine
 // Only the same user on the same machine can decrypt the data
 func (cm *CredentialManager) EncryptPasswordDPAPI(password string) (string, error) {
+	debug := false
+
 	if password == "" {
 		return "", nil
 	}
 
-	logging.Log(true, "Encrypting password with Windows DPAPI (native)")
+	logging.Log(debug, "Encrypting password with Windows DPAPI (native)")
 
 	// Convert password to bytes
 	passwordBytes := []byte(password)
+	// Clear password from memory immediately
+	password = ""
 
 	// Create data blob for input
 	dataIn := newBlob(passwordBytes)
@@ -307,76 +230,25 @@ func (cm *CredentialManager) EncryptPasswordDPAPI(password string) (string, erro
 	// Free the memory allocated by CryptProtectData
 	syscall.SyscallN(procLocalFree.Addr(), uintptr(unsafe.Pointer(dataOut.pbData)))
 
+	// Clear sensitive data from memory
+	for i := range passwordBytes {
+		passwordBytes[i] = 0
+	}
+
 	logging.Log(true, "Password encrypted successfully with DPAPI, length:", len(encrypted))
 	return encrypted, nil
 }
 
-// DecryptPasswordDPAPI decrypts a password using Windows DPAPI with automatic migration from legacy AES
-// Returns both the decrypted password and a flag indicating if migration is needed
+// DecryptPasswordDPAPI decrypts a password using Windows DPAPI
 func (cm *CredentialManager) DecryptPasswordDPAPI(encryptedPassword string) (string, error) {
+	debug := false
+
 	if encryptedPassword == "" {
 		return "", nil
 	}
 
-	logging.Log(true, "Attempting to decrypt password with Windows DPAPI (native)")
-
-	// First try DPAPI decryption
-	decrypted, err := cm.decryptWithDPAPI(encryptedPassword)
-	if err == nil {
-		logging.Log(true, "Password decrypted successfully with DPAPI - no migration needed")
-		return decrypted, nil
-	}
-
-	// If DPAPI fails, try legacy AES decryption (migration support)
-	logging.Log(true, "DPAPI decryption failed, attempting legacy AES decryption for migration")
-	decrypted, err = cm.DecryptPassword(encryptedPassword)
-	if err == nil {
-		logging.Log(true, "Password decrypted with legacy AES - MIGRATION NEEDED")
-		return decrypted, nil
-	}
-
-	// Both methods failed
-	logging.Log(true, "ERROR: Both DPAPI and legacy AES decryption failed")
-	return "", fmt.Errorf("failed to decrypt password with both DPAPI and legacy AES")
-}
-
-// DecryptPasswordWithMigration decrypts and automatically migrates legacy passwords
-// Returns decrypted password and the new DPAPI-encrypted version if migration occurred
-func (cm *CredentialManager) DecryptPasswordWithMigration(encryptedPassword string) (string, string, bool, error) {
-	if encryptedPassword == "" {
-		return "", "", false, nil
-	}
-
-	logging.Log(true, "DecryptPasswordWithMigration: Attempting DPAPI decryption")
-
-	// First try DPAPI decryption
-	decrypted, err := cm.decryptWithDPAPI(encryptedPassword)
-	if err == nil {
-		logging.Log(true, "DecryptPasswordWithMigration: DPAPI decryption successful - no migration needed")
-		return decrypted, encryptedPassword, false, nil
-	}
-
-	// If DPAPI fails, try legacy AES decryption and migrate
-	logging.Log(true, "DecryptPasswordWithMigration: DPAPI failed, trying legacy AES for migration")
-	decrypted, err = cm.DecryptPassword(encryptedPassword)
-	if err == nil {
-		logging.Log(true, "DecryptPasswordWithMigration: Legacy AES successful - migrating to DPAPI")
-
-		// Migrate to DPAPI
-		newEncrypted, migrateErr := cm.EncryptPasswordDPAPI(decrypted)
-		if migrateErr != nil {
-			logging.Log(true, "DecryptPasswordWithMigration: Migration failed:", migrateErr)
-			// Still return the decrypted password even if migration fails
-			return decrypted, encryptedPassword, false, nil
-		}
-
-		logging.Log(true, "DecryptPasswordWithMigration: Migration to DPAPI successful")
-		return decrypted, newEncrypted, true, nil
-	}
-
-	// Both methods failed
-	logging.Log(true, "DecryptPasswordWithMigration: Both DPAPI and legacy AES failed")
-	return "", "", false, fmt.Errorf("failed to decrypt password with both DPAPI and legacy AES")
+	logging.Log(debug, "Decrypting password with Windows DPAPI")
+	return cm.decryptWithDPAPI(encryptedPassword)
 }
 
 // decryptWithDPAPI performs pure DPAPI decryption
@@ -419,20 +291,6 @@ func (cm *CredentialManager) decryptWithDPAPI(encryptedPassword string) (string,
 }
 
 // MigratePasswordToDPAPI migrates a password from legacy AES to DPAPI encryption
-// This function should be called when a password is successfully decrypted with legacy AES
-func (cm *CredentialManager) MigratePasswordToDPAPI(plainTextPassword string) (string, error) {
-	logging.Log(true, "Migrating password from legacy AES to DPAPI")
-
-	// Encrypt with new DPAPI method
-	dpapiEncrypted, err := cm.EncryptPasswordDPAPI(plainTextPassword)
-	if err != nil {
-		logging.Log(true, "ERROR: Failed to migrate password to DPAPI:", err)
-		return "", fmt.Errorf("failed to migrate password to DPAPI: %v", err)
-	}
-
-	logging.Log(true, "Password migrated successfully to DPAPI")
-	return dpapiEncrypted, nil
-}
 
 // EncryptPasswordForUserEdit encrypts a password for user credential editing (JSON storage only)
 // This is used when user edits credentials - only saves to JSON, not to CredStore
@@ -465,7 +323,7 @@ func (cm *CredentialManager) StoreCredentialForHostEdit(hostname, username, encr
 	}
 
 	// Decrypt the password first
-	password, newEncrypted, migrated, err := cm.DecryptPasswordWithMigration(encryptedPassword)
+	password, err := cm.DecryptPasswordDPAPI(encryptedPassword)
 	if err != nil {
 		logging.Log(true, "StoreCredentialForHostEdit: Failed to decrypt password:", err)
 		return fmt.Errorf("failed to decrypt password for host edit: %v", err)
@@ -473,17 +331,68 @@ func (cm *CredentialManager) StoreCredentialForHostEdit(hostname, username, encr
 
 	// Store in Windows CredStore
 	logging.Log(true, "StoreCredentialForHostEdit: Storing credential in Windows CredStore")
-	if err := cm.StoreCredential(hostname, username, password); err != nil {
-		logging.Log(true, "StoreCredentialForHostEdit: Failed to store in CredStore:", err)
-		return fmt.Errorf("failed to store credential in CredStore: %v", err)
-	}
+	storeErr := cm.StoreCredential(hostname, username, password)
 
-	if migrated {
-		logging.Log(true, "StoreCredentialForHostEdit: Password was migrated during host edit - caller should update JSON")
-		// The caller needs to know about the migration to update the JSON
-		return fmt.Errorf("MIGRATION_NEEDED:%s", newEncrypted)
+	// Clear password from memory immediately after use
+	password = ""
+
+	if storeErr != nil {
+		logging.Log(true, "StoreCredentialForHostEdit: Failed to store in CredStore:", storeErr)
+		return fmt.Errorf("failed to store credential in CredStore: %v", storeErr)
 	}
 
 	logging.Log(true, "StoreCredentialForHostEdit: Host credential edit completed successfully")
 	return nil
+}
+
+// UpdateUserCredentials updates user credentials, reusing existing password if new password is empty
+// Returns the (possibly unchanged) encrypted password and whether migration occurred
+func (cm *CredentialManager) UpdateUserCredentials(oldEncryptedPassword, newPlaintextPassword string) (string, bool, error) {
+	logging.Log(true, "UpdateUserCredentials: Processing user credential update")
+
+	// If no new password provided, return the old encrypted password unchanged
+	if newPlaintextPassword == "" {
+		logging.Log(true, "UpdateUserCredentials: No new password provided, keeping existing password")
+		return oldEncryptedPassword, false, nil
+	}
+
+	// If new password provided, encrypt it
+	logging.Log(true, "UpdateUserCredentials: New password provided, encrypting with DPAPI")
+	newEncrypted, err := cm.EncryptPasswordDPAPI(newPlaintextPassword)
+	if err != nil {
+		logging.Log(true, "UpdateUserCredentials: Failed to encrypt new password:", err)
+		return "", false, fmt.Errorf("failed to encrypt new password: %v", err)
+	}
+
+	// Clear the plaintext password from memory
+	newPlaintextPassword = ""
+
+	logging.Log(true, "UpdateUserCredentials: New password encrypted successfully")
+	return newEncrypted, false, nil
+}
+
+// UpdateUserCredentialsWithMigration updates user credentials
+// Returns the encrypted password, whether migration occurred, and any error
+func (cm *CredentialManager) UpdateUserCredentialsWithMigration(oldEncryptedPassword, newPlaintextPassword string) (string, bool, error) {
+	logging.Log(true, "UpdateUserCredentialsWithMigration: Processing user credential update")
+
+	// If no new password provided, return old password unchanged
+	if newPlaintextPassword == "" {
+		logging.Log(true, "UpdateUserCredentialsWithMigration: No new password provided, keeping existing password")
+		return oldEncryptedPassword, false, nil
+	}
+
+	// If new password provided, encrypt it with DPAPI
+	logging.Log(true, "UpdateUserCredentialsWithMigration: New password provided, encrypting with DPAPI")
+	newEncrypted, err := cm.EncryptPasswordDPAPI(newPlaintextPassword)
+	if err != nil {
+		logging.Log(true, "UpdateUserCredentialsWithMigration: Failed to encrypt new password:", err)
+		return "", false, fmt.Errorf("failed to encrypt new password: %v", err)
+	}
+
+	// Clear the plaintext password from memory
+	newPlaintextPassword = ""
+
+	logging.Log(true, "UpdateUserCredentialsWithMigration: New password encrypted successfully")
+	return newEncrypted, false, nil
 }

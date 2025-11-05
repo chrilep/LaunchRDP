@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/chrilep/LaunchRDP/config"
 	"github.com/chrilep/LaunchRDP/logging"
@@ -10,13 +9,15 @@ import (
 )
 
 func main() {
+	debug := false
+
 	// Set up panic handling and logging
 	defer logging.PanicHandler()
 
 	// Initialize logging
-	logging.Log(true, "===", AppName, "Starting ===")
-	logging.Log(true, "Version:", Version)
-	logging.Log(true, "Build Date: 2025-10-29")
+	logging.Log(debug, "===", AppName, "Starting ===")
+	logging.Log(debug, "Version:", Version)
+	logging.Log(debug, "Build Date: 2025-10-29")
 
 	// Command line flags
 	var port = flag.Int("port", 9457, "Port for web server") // Use consistent port to avoid firewall prompts
@@ -30,25 +31,25 @@ func main() {
 		return
 	}
 
-	logging.Log(true, "Initializing web-based LaunchRDP")
+	logging.Log(debug, "Initializing web-based LaunchRDP")
 
 	// Initialize config directories
-	logging.Log(true, "Initializing config directories")
+	logging.Log(debug, "Initializing config directories")
 	if err := config.InitDirectories(); err != nil {
-		logging.Log(true, "ERROR: Failed to initialize directories:", err)
-		log.Fatalf("Failed to initialize directories: %v", err)
+		logging.Log(true, "FATAL: Failed to initialize directories:", err)
+		return // Exit gracefully instead of fatal error
 	}
-	logging.Log(true, "Config directories initialized successfully")
-	logging.Log(true, "Starting WebView2-only application")
+	logging.Log(debug, "Config directories initialized successfully")
+	logging.Log(debug, "Starting WebView2-only application")
 
 	// Create and run WebView2 app (WebView2-only, no browser support)
 	app := web.NewWebView2App(*port)
 	if err := app.Run(); err != nil {
-		logging.Log(true, "ERROR: WebView2 failed:", err)
-		log.Fatalf("Failed to start WebView2: %v", err)
+		logging.Log(true, "FATAL: WebView2 failed:", err)
+		return // Exit gracefully instead of fatal error
 	}
 
 	// This should only be reached when the application exits
-	logging.Log(true, "===", AppName, "Exiting ===")
+	logging.Log(debug, "===", AppName, "Exiting ===")
 	logging.CloseLog()
 }

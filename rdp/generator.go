@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/chrilep/LaunchRDP/config"
-	"github.com/chrilep/LaunchRDP/credentials"
 	"github.com/chrilep/LaunchRDP/logging"
 	"github.com/chrilep/LaunchRDP/models"
 )
@@ -202,32 +201,9 @@ func (g *Generator) LaunchHost(host models.Host, user models.User) error {
 	logging.Log(true, "User details - ID:", user.ID, "Name:", user.Name, "Username:", user.Username)
 	logging.Log(true, "User has encrypted password:", user.EncryptedPassword != "")
 
-	// Check for legacy password migration (credentials should already be in CredStore from user save)
+	// User password should already be stored in Windows CredStore when user was saved
 	if user.EncryptedPassword != "" {
-		logging.Log(true, "User has encrypted password - checking for legacy AES migration")
-		credManager := credentials.NewCredentialManager()
-
-		// Only decrypt for migration check - don't store credentials (that's done on user save)
-		_, newEncryptedPassword, migrated, err := credManager.DecryptPasswordWithMigration(user.EncryptedPassword)
-		if err != nil {
-			logging.Log(true, "WARNING: Failed to decrypt password for migration check:", err)
-			// Don't fail launch - credentials might still work from CredStore
-		} else if migrated {
-			logging.Log(true, "Password was migrated from legacy AES to DPAPI during launch")
-
-			// Save the migrated password immediately to prevent future AES fallbacks
-			if g.SaveUserCallback != nil {
-				user.EncryptedPassword = newEncryptedPassword
-				if err := g.SaveUserCallback(user); err != nil {
-					logging.Log(true, "WARNING: Failed to save migrated password:", err)
-					// Don't fail the launch if save fails - migration happened successfully
-				} else {
-					logging.Log(true, "Migrated password saved successfully - future launches will use DPAPI directly")
-				}
-			} else {
-				logging.Log(true, "WARNING: No save callback set - migrated password will not persist")
-			}
-		}
+		logging.Log(true, "User has encrypted password stored")
 	}
 
 	logging.Log(true, "Using existing credentials from Windows Credential Store (stored during user save)") // Generate standard RDP file (password comes from CredStore)
@@ -264,7 +240,7 @@ func (g *Generator) CleanupTempFiles() error {
 			filePath := filepath.Join(tempDir, entry.Name())
 			if err := os.Remove(filePath); err != nil {
 				// Log error but continue cleanup
-				fmt.Printf("Warning: failed to remove temp file %s: %v\n", filePath, err)
+				logging.Log(true, "Warning: failed to remove temp file", filePath+":", err)
 			}
 		}
 	}
