@@ -57,6 +57,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/hosts/", s.handleHostByID)
 	mux.HandleFunc("/api/launch", s.handleLaunch)
 	mux.HandleFunc("/api/window-info", s.handleWindowInfo)
+	mux.HandleFunc("/api/log", s.handleWebViewLog)
 
 	// Start server - bind only to localhost to avoid firewall prompts
 	addr := fmt.Sprintf("localhost:%d", s.port)
@@ -543,4 +544,32 @@ func (s *Server) handleWindowInfo(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// handleWebViewLog receives log messages from JavaScript and forwards them to backend logging
+func (s *Server) handleWebViewLog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var logData struct {
+		Message string `json:"message"`
+		Level   string `json:"level"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&logData); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Forward to backend logging system
+	debug := (logData.Level == "debug")
+	logging.Log(debug, "[JavaScript]", logData.Message)
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "logged"})
 }

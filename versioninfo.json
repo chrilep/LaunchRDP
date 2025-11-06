@@ -2,15 +2,15 @@
   "FixedFileInfo": {
     "FileVersion": {
       "Major": 1,
-      "Minor": 3,
+      "Minor": 4,
       "Patch": 0,
-      "Build": 7
+      "Build": 1
     },
     "ProductVersion": {
       "Major": 1,
-      "Minor": 3,
+      "Minor": 4,
       "Patch": 0,
-      "Build": 7
+      "Build": 1
     },
     "FileFlagsMask": "3f",
     "FileFlags ": "00",
@@ -22,14 +22,14 @@
     "Comments": "Remote Desktop Connection Manager - https://github.com/chrilep/LaunchRDP",
     "CompanyName": "Lancer",
     "FileDescription": "LaunchRDP - Remote Desktop Connection Manager",
-    "FileVersion": "1.3.0.7",
+    "FileVersion": "1.4.0.1",
     "InternalName": "LaunchRDP",
     "LegalCopyright": "Copyright © 2025 Lancer. All rights reserved.",
     "LegalTrademarks": "https://github.com/chrilep/LaunchRDP",
     "OriginalFilename": "LaunchRDP.exe",
     "PrivateBuild": "",
     "ProductName": "LaunchRDP",
-    "ProductVersion": "1.3.0.7",
+    "ProductVersion": "1.4.0.1",
     "SpecialBuild": ""
   },
   "VarFileInfo": {

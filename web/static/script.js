@@ -6,6 +6,41 @@ let editingHostId = null;
 let editingUserId = null;
 let windowBorderInfo = null;
 
+// Backend logging function to replace console.log
+function logToBackend(message, ...args) {
+  // Construct full message with all arguments
+  let fullMessage = String(message);
+  if (args.length > 0) {
+    fullMessage +=
+      " " +
+      args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+        )
+        .join(" ");
+  }
+
+  // Send to backend logging API
+  fetch("/api/log", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: fullMessage,
+      level: "debug",
+    }),
+  }).catch((err) => {
+    // Fallback to console.log only if backend logging fails
+    console.log(
+      "Backend logging failed:",
+      err,
+      "Original message:",
+      fullMessage
+    );
+  });
+}
+
 // 4-Column Navigation
 function showColumn(columnNumber) {
   const container = document.querySelector(".columns-container");
@@ -82,30 +117,30 @@ function addNewHost() {
 }
 
 function editHost(hostId) {
-  console.log("DEBUG editHost: Called with hostId:", hostId);
+  logToBackend("DEBUG editHost: Called with hostId:", hostId);
   editingHostId = hostId;
   const host = hosts.find((h) => h.id === hostId);
-  console.log("DEBUG editHost: Found host:", host);
-  console.log(
+  logToBackend("DEBUG editHost: Found host:", host);
+  logToBackend(
     "DEBUG editHost: Host window_width:",
     host ? host.window_width : "HOST IS NULL"
   );
-  console.log(
+  logToBackend(
     "DEBUG editHost: Host window_height:",
     host ? host.window_height : "HOST IS NULL"
   );
-  console.log(
+  logToBackend(
     "DEBUG editHost: Host desktop_width:",
     host ? host.desktop_width : "HOST IS NULL"
   );
-  console.log(
+  logToBackend(
     "DEBUG editHost: Host desktop_height:",
     host ? host.desktop_height : "HOST IS NULL"
   );
   if (host) {
-    console.log("DEBUG editHost: About to call populateHostForm...");
+    logToBackend("DEBUG editHost: About to call populateHostForm...");
     populateHostForm(host);
-    console.log("DEBUG editHost: populateHostForm completed");
+    logToBackend("DEBUG editHost: populateHostForm completed");
     loadUsersForSelect();
     showColumn(1); // Column 1 is Edit Host
   }
@@ -139,7 +174,7 @@ function clearHostForm() {
 }
 
 function populateHostForm(host) {
-  console.log("DEBUG populateHostForm: Host object received:", host);
+  logToBackend("DEBUG populateHostForm: Host object received:", host);
 
   document.getElementById("host-id").value = host.id;
   document.getElementById("host-address").value = host.address || "";
@@ -150,13 +185,13 @@ function populateHostForm(host) {
   let windowWidth = host.window_width;
   let windowHeight = host.window_height;
 
-  console.log(
+  logToBackend(
     "DEBUG populateHostForm: Raw values from host - window_width:",
     host.window_width,
     "window_height:",
     host.window_height
   );
-  console.log(
+  logToBackend(
     "DEBUG populateHostForm: Raw values from host - desktop_width:",
     host.desktop_width,
     "desktop_height:",
@@ -166,20 +201,20 @@ function populateHostForm(host) {
   if (!windowWidth || windowWidth === 0) {
     // Calculate window size from desktop size (reverse calculation for legacy data)
     windowWidth = (host.desktop_width || 1200) + 16; // Add estimated borders
-    console.log(
+    logToBackend(
       "DEBUG populateHostForm: Calculated windowWidth from desktop_width:",
       windowWidth
     );
   }
   if (!windowHeight || windowHeight === 0) {
     windowHeight = (host.desktop_height || 800) + 59; // Add estimated title bar + borders
-    console.log(
+    logToBackend(
       "DEBUG populateHostForm: Calculated windowHeight from desktop_height:",
       windowHeight
     );
   }
 
-  console.log(
+  logToBackend(
     "DEBUG populateHostForm: Final values - windowWidth:",
     windowWidth,
     "windowHeight:",
@@ -233,7 +268,7 @@ async function saveHost() {
   const posX = parseInt(document.getElementById("host-pos-x").value) || 100;
   const posY = parseInt(document.getElementById("host-pos-y").value) || 100;
 
-  console.log("saveHost DEBUG - Input values:", {
+  logToBackend("saveHost DEBUG - Input values:", {
     windowWidth,
     windowHeight,
     posX,
@@ -242,13 +277,13 @@ async function saveHost() {
 
   // Calculate the RDP client area (desktop resolution) from the desired window size
   const clientSize = calculateRdpClientSize(windowWidth, windowHeight);
-  console.log("saveHost DEBUG - Calculated client size:", clientSize);
+  logToBackend("saveHost DEBUG - Calculated client size:", clientSize);
 
   // Calculate window position coordinates for winposstr
   const windowRight = posX + windowWidth;
   const windowBottom = posY + windowHeight;
   const winPosStr = `0,1,${posX},${posY},${windowRight},${windowBottom}`;
-  console.log("saveHost DEBUG - WinPosStr:", winPosStr);
+  logToBackend("saveHost DEBUG - WinPosStr:", winPosStr);
 
   const hostData = {
     address: document.getElementById("host-address").value,
@@ -266,7 +301,7 @@ async function saveHost() {
     display_mode: document.getElementById("host-display-mode").value,
   };
 
-  console.log(
+  logToBackend(
     "saveHost DEBUG - Final hostData:",
     JSON.stringify(hostData, null, 2)
   );
@@ -317,22 +352,22 @@ async function launchConnection(hostId) {
 }
 
 async function loadHosts() {
-  console.log("DEBUG loadHosts: Loading hosts from API...");
+  logToBackend("DEBUG loadHosts: Loading hosts from API...");
   try {
     [users, hosts] = await Promise.all([
       apiCall("/api/users"),
       apiCall("/api/hosts"),
     ]);
-    console.log("DEBUG loadHosts: Loaded", hosts.length, "hosts from API");
+    logToBackend("DEBUG loadHosts: Loaded", hosts.length, "hosts from API");
     if (hosts[0]) {
-      console.log("DEBUG loadHosts: First host window dimensions:", {
+      logToBackend("DEBUG loadHosts: First host window dimensions:", {
         window_width: hosts[0].window_width,
         window_height: hosts[0].window_height,
         desktop_width: hosts[0].desktop_width,
         desktop_height: hosts[0].desktop_height,
       });
     } else {
-      console.log("DEBUG loadHosts: No hosts found");
+      logToBackend("DEBUG loadHosts: No hosts found");
     }
     renderHosts();
     updateHostUserSelect();
@@ -563,11 +598,11 @@ async function loadWindowBorderInfo() {
 
 // Calculate RDP client size from desired window size
 function calculateRdpClientSize(windowWidth, windowHeight) {
-  console.log("calculateRdpClientSize DEBUG - Input:", {
+  logToBackend("calculateRdpClientSize DEBUG - Input:", {
     windowWidth,
     windowHeight,
   });
-  console.log(
+  logToBackend(
     "calculateRdpClientSize DEBUG - windowBorderInfo:",
     windowBorderInfo
   );
@@ -577,7 +612,7 @@ function calculateRdpClientSize(windowWidth, windowHeight) {
       clientWidth: windowWidth - 16, // Default border estimate
       clientHeight: windowHeight - 59, // Default title bar + border estimate
     };
-    console.log("calculateRdpClientSize DEBUG - Default result:", result);
+    logToBackend("calculateRdpClientSize DEBUG - Default result:", result);
     return result;
   }
 
@@ -592,7 +627,7 @@ function calculateRdpClientSize(windowWidth, windowHeight) {
     clientHeight: Math.max(clientHeight, 100), // Minimum size
   };
 
-  console.log("calculateRdpClientSize DEBUG - Border-based result:", result);
+  logToBackend("calculateRdpClientSize DEBUG - Border-based result:", result);
   return result;
 }
 
