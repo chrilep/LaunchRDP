@@ -31,8 +31,8 @@ func InitDirectories() error {
 	// Set directory paths
 	ConfigDir = filepath.Join(appData, AppName, SubAppName)
 	DataDir = ConfigDir
-	LogsDir = filepath.Join(localAppData, AppName, SubAppName, "logs")
-	TempDir = filepath.Join(localAppData, AppName, SubAppName, "temp")
+	TempDir = filepath.Join(localAppData, AppName, SubAppName)
+	LogsDir = TempDir
 
 	// Create directories
 	dirs := []string{ConfigDir, DataDir, LogsDir, TempDir}

@@ -4,19 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LaunchRDP</title>
-    <link rel="stylesheet" href="/static/style.css" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAACqjzQnAAAAnUlEQVR4Ae2XsQ2DMBBF30pQCEpACUoAJShASUgJSEApKBAJt6Gm3E7M0mJ3uXn2k2YH4zgZ+0q1rvCkiRJkiRJkrwDgKq6HvwCwN1VVVUTuAPgH2DMsK1uAPh1H0B8z9m6OwCq6rqqqgmnANzWxkYwB8C8I0yPAMwzjP0HgF8x5jPAPwD0z1m6e0AzDPMeQB8w5hPAOwx4ztN+QKXJElyRJIkSf4C/gDteAeu2zJt2AAAAAElFTkSuQmCC"
+    />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <h1>LaunchRDP</h1>
-        <p>Remote Desktop Connection Manager</p>
-      </div>
+      <!-- Header -->
+      <div class="header"><h1>LaunchRDP</h1></div>
+      <div class="header"><p>Manage your RDP connections easily</p></div>
 
       <!-- Navigation Bar -->
       <div class="nav-bar">
-        <button class="nav-button active" onclick="showColumn(2)">Hosts</button>
-        <button class="nav-button" onclick="showColumn(3)">Users</button>
+        <button class="nav-button active" data-column="2">Hosts</button>
+        <button class="nav-button" data-column="3">Users</button>
         <div class="nav-indicator"></div>
       </div>
 
@@ -26,10 +30,7 @@
         <div class="column" id="column-1">
           <div class="column-header">
             <h2>Edit Host</h2>
-            <button
-              class="btn btn-success btn-sm"
-              onclick="saveHostAndReturn()"
-            >
+            <button class="btn btn-success btn-sm" id="btn-save-host-return">
               OK
             </button>
           </div>
@@ -40,31 +41,51 @@
               <div class="form-section">
                 <h3>Connection Details</h3>
                 <div class="form-group">
+                  <label for="host-name">Custom Name:</label>
+                  <input
+                    type="text"
+                    id="host-name"
+                    placeholder="Friendly name (optional)"
+                    title="Example: 'Prod SQL Server' or 'Berlin Office PC'"
+                  />
+                </div>
+                <div class="form-group">
                   <label for="host-address">Address/IP/Hostname:</label>
                   <input
                     type="text"
                     id="host-address"
                     placeholder="hostname or IP"
                     required
+                    title="Examples: server01.domain.local, 10.0.5.12, workstation-23"
                   />
                 </div>
                 <div class="form-group">
                   <label for="host-port">Port:</label>
-                  <input type="number" id="host-port" value="3389" required />
+                  <input
+                    type="number"
+                    id="host-port"
+                    value="3389"
+                    required
+                    title="Default RDP port is 3389"
+                  />
                 </div>
                 <div class="form-group">
-                  <label for="host-user">Assigned User/Credentials:</label>
-                  <select id="host-user" required></select>
+                  <label for="host-user">Assigned User</label>
+                  <select
+                    id="host-user"
+                    required
+                    title="Select stored credentials to use for this host"
+                  ></select>
                 </div>
               </div>
 
               <div class="form-section">
-                <h3>Display Settings</h3>
+                <h3>Display</h3>
                 <div class="form-group">
-                  <label for="host-display-mode">Display Mode:</label>
+                  <label for="host-display-mode">Mode</label>
                   <select
                     id="host-display-mode"
-                    onchange="toggleWindowSettings()"
+                    title="Fullscreen uses all monitors; Window lets you position and size manually"
                   >
                     <option value="fullscreen">Fullscreen</option>
                     <option value="window" selected>Window</option>
@@ -73,38 +94,64 @@
                 <div id="window-settings">
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="host-pos-x">Position X:</label>
-                      <input type="number" id="host-pos-x" value="100" />
+                      <label for="host-pos-x">Position X</label>
+                      <input
+                        type="number"
+                        id="host-pos-x"
+                        value="100"
+                        title="Left edge of window in pixels from primary monitor origin"
+                      />
                     </div>
                     <div class="form-group">
-                      <label for="host-pos-y">Position Y:</label>
-                      <input type="number" id="host-pos-y" value="100" />
+                      <label for="host-pos-y">Position Y</label>
+                      <input
+                        type="number"
+                        id="host-pos-y"
+                        value="100"
+                        title="Top edge of window in pixels from primary monitor origin"
+                      />
                     </div>
                   </div>
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="host-width">Window Width:</label>
-                      <input type="number" id="host-width" value="1200" />
+                      <label for="host-width">Width</label>
+                      <input
+                        type="number"
+                        id="host-width"
+                        value="1200"
+                        title="Outer window width including borders"
+                      />
                     </div>
                     <div class="form-group">
-                      <label for="host-height">Window Height:</label>
-                      <input type="number" id="host-height" value="800" />
+                      <label for="host-height">Height</label>
+                      <input
+                        type="number"
+                        id="host-height"
+                        value="800"
+                        title="Outer window height including title bar"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Calculation Info -->
-              <div class="form-section">
+              <!-- Calculation Info (hidden in fullscreen) -->
+              <div class="form-section" id="calculation-section">
                 <h3>Calculation Info</h3>
                 <div id="calculation-info" class="calculation-info">
                   <div class="calculation-row">
-                    <span class="calculation-label">RDP Client Size:</span>
-                    <span id="client-size" class="calculation-value">-</span>
+                    <span class="calculation-label">Mouse Position:</span>
+                    <span id="mouse-position" class="calculation-value">-</span>
                   </div>
                   <div class="calculation-row">
-                    <span class="calculation-label">Window Borders:</span>
+                    <span class="calculation-label"
+                      >Detected Windows Borders:</span
+                    >
                     <span id="window-borders" class="calculation-value">-</span>
+                  </div>
+                  <div class="calculation-row">
+                    <span class="calculation-label">Client Size:</span>
+                    <span id="client-size" class="calculation-value">-</span>
                   </div>
                   <div class="calculation-row">
                     <span class="calculation-label">WinPosStr:</span>
@@ -117,13 +164,22 @@
                 <h3>Features</h3>
                 <div class="form-group checkbox-group">
                   <label>
-                    <input type="checkbox" id="host-clipboard" checked />
+                    <input
+                      type="checkbox"
+                      id="host-clipboard"
+                      checked
+                      title="If enabled, local clipboard is available in the RDP session"
+                    />
                     <span>Clipboard Access</span>
                   </label>
                 </div>
                 <div class="form-group checkbox-group">
                   <label>
-                    <input type="checkbox" id="host-drives" />
+                    <input
+                      type="checkbox"
+                      id="host-drives"
+                      title="Redirect all local drives to the remote session"
+                    />
                     <span>Drives Redirect</span>
                   </label>
                 </div>
@@ -136,7 +192,7 @@
         <div class="column" id="column-2">
           <div class="column-header">
             <h2>Hosts</h2>
-            <button class="btn btn-primary btn-sm" onclick="addNewHost()">
+            <button class="btn btn-primary btn-sm" id="btn-add-host">
               + Add Host
             </button>
           </div>
@@ -149,7 +205,7 @@
         <div class="column" id="column-3">
           <div class="column-header">
             <h2>Users</h2>
-            <button class="btn btn-primary btn-sm" onclick="addNewUser()">
+            <button class="btn btn-primary btn-sm" id="btn-add-user">
               + Add User
             </button>
           </div>
@@ -162,10 +218,7 @@
         <div class="column" id="column-4">
           <div class="column-header">
             <h2>Edit User</h2>
-            <button
-              class="btn btn-success btn-sm"
-              onclick="saveUserAndReturn()"
-            >
+            <button class="btn btn-success btn-sm" id="btn-save-user-return">
               OK
             </button>
           </div>
@@ -211,6 +264,6 @@
       <div id="status-container"></div>
     </div>
 
-    <script src="/static/script.js"></script>
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>

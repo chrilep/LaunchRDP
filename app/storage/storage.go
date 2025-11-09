@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/chrilep/LaunchRDP/config"
-	"github.com/chrilep/LaunchRDP/models"
+	"github.com/chrilep/LaunchRDP/app/config"
+	"github.com/chrilep/LaunchRDP/app/models"
 )
 
 const (

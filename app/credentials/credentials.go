@@ -3,22 +3,47 @@ package credentials
 import (
 	"encoding/base64"
 	"fmt"
-	"os/exec"
-	"strings"
 	"syscall"
 	"unsafe"
 
-	"github.com/chrilep/LaunchRDP/logging"
+	"github.com/chrilep/LaunchRDP/app/logging"
 )
 
-// Windows DPAPI structures and functions
+// Windows DPAPI and Credential Manager structures and functions
 var (
 	crypt32                = syscall.NewLazyDLL("crypt32.dll")
 	kernel32               = syscall.NewLazyDLL("kernel32.dll")
+	advapi32               = syscall.NewLazyDLL("advapi32.dll")
 	procCryptProtectData   = crypt32.NewProc("CryptProtectData")
 	procCryptUnprotectData = crypt32.NewProc("CryptUnprotectData")
 	procLocalFree          = kernel32.NewProc("LocalFree")
+	procCredWriteW         = advapi32.NewProc("CredWriteW")
+	procCredDeleteW        = advapi32.NewProc("CredDeleteW")
 )
+
+// Windows Credential structures
+const (
+	CRED_TYPE_GENERIC             = 0x1 // Generic credential type - works for RDP
+	CRED_TYPE_DOMAIN_PASSWORD     = 0x2 // Domain password - more restrictive
+	CRED_PERSIST_LOCAL_MACHINE    = 0x2
+	CRED_PERSIST_ENTERPRISE       = 0x3
+	CRED_MAX_CREDENTIAL_BLOB_SIZE = 512
+)
+
+type credential struct {
+	Flags              uint32
+	Type               uint32
+	TargetName         *uint16
+	Comment            *uint16
+	LastWritten        syscall.Filetime
+	CredentialBlobSize uint32
+	CredentialBlob     *byte
+	Persist            uint32
+	AttributeCount     uint32
+	Attributes         uintptr
+	TargetAlias        *uint16
+	UserName           *uint16
+}
 
 type dataBlob struct {
 	cbData uint32
@@ -49,12 +74,12 @@ func NewCredentialManager() *CredentialManager {
 	return &CredentialManager{}
 }
 
-// StoreCredential stores a credential in Windows Credential Manager as Domain credential
-// Uses cmdkey format for domain credentials: cmdkey /add:TERMSRV/hostname /user:username /pass:password
+// StoreCredential stores a credential in Windows Credential Manager using native API
+// Uses domain credential format: TERMSRV/hostname with CRED_TYPE_DOMAIN_PASSWORD
 func (cm *CredentialManager) StoreCredential(hostname, username, password string) error {
 	debug := false
 
-	logging.Log(debug, "StoreCredential called for hostname:", hostname, "username:", username)
+	logging.Log(debug, "Input - hostname:", hostname, "username:", username, "password length:", len(password))
 
 	// Skip invalid hostnames
 	if hostname == "" {
@@ -62,133 +87,165 @@ func (cm *CredentialManager) StoreCredential(hostname, username, password string
 		return fmt.Errorf("invalid hostname: %s", hostname)
 	}
 
-	// Use /add for domain credentials (Windows-Anmeldeinformationen)
-	cmdArgs := []string{"/add:TERMSRV/" + hostname, "/user:" + username, "/pass:" + password}
-	// SECURITY: Never log the actual cmdkey args as they contain the password in plaintext
-	logging.Log(debug, "Executing cmdkey for TERMSRV/"+hostname+" with user "+username)
-
-	cmd := exec.Command("cmdkey", cmdArgs...)
-
-	// Clear password from memory as soon as possible
-	for i := range cmdArgs {
-		if strings.Contains(cmdArgs[i], "/pass:") {
-			cmdArgs[i] = "/pass:***CLEARED***"
-		}
+	if username == "" {
+		logging.Log(true, "ERROR: Invalid username provided")
+		return fmt.Errorf("invalid username")
 	}
-	// Clear the original password parameter
-	password = ""
 
-	logging.Log(debug, "Running cmdkey command...")
-	output, err := cmd.CombinedOutput()
-	outputStr := strings.TrimSpace(string(output))
+	if password == "" {
+		logging.Log(true, "ERROR: Invalid password provided (empty)")
+		return fmt.Errorf("invalid password: empty")
+	}
 
+	targetString := "TERMSRV/" + hostname
+	logging.Log(debug, "Target string:", targetString)
+
+	targetName, err := syscall.UTF16PtrFromString(targetString)
 	if err != nil {
-		logging.Log(true, "ERROR: cmdkey failed with error:", err, "output:", outputStr)
-		return fmt.Errorf("failed to store credential for %s: %w, output: %s", hostname, err, outputStr)
+		logging.Log(true, "ERROR: Failed to convert target name to UTF16:", err)
+		return fmt.Errorf("failed to convert target name: %v", err)
+	}
+	logging.Log(debug, "Target name converted to UTF16 successfully")
+
+	// For CRED_TYPE_DOMAIN_PASSWORD, UserName must be in format DOMAIN\Username
+	// If username doesn't contain backslash, assume local machine
+	formattedUsername := username
+	if !containsBackslash(username) {
+		// No domain specified, use hostname as domain (for local accounts)
+		formattedUsername = hostname + "\\" + username
+		logging.Log(debug, "No domain in username, formatted as:", formattedUsername)
+	} else {
+		logging.Log(debug, "Username already contains domain:", formattedUsername)
 	}
 
-	logging.Log(debug, "cmdkey completed successfully, output:", outputStr)
-	logging.Log(debug, "Successfully stored domain credential for", hostname, "with user", username)
+	userNamePtr, err := syscall.UTF16PtrFromString(formattedUsername)
+	if err != nil {
+		logging.Log(true, "ERROR: Failed to convert username to UTF16:", err)
+		return fmt.Errorf("failed to convert username: %v", err)
+	}
+	logging.Log(debug, "Username converted to UTF16 successfully")
+
+	// For CRED_TYPE_DOMAIN_PASSWORD, password must be UTF-16 encoded
+	passwordUTF16, err := syscall.UTF16FromString(password)
+	if err != nil {
+		logging.Log(true, "ERROR: Failed to convert password to UTF16:", err)
+		return fmt.Errorf("failed to convert password: %v", err)
+	}
+
+	// IMPORTANT: Remove null terminator! syscall.UTF16FromString adds a null terminator,
+	// but CRED_TYPE_DOMAIN_PASSWORD does NOT want it in CredentialBlob
+	// The documentation explicitly states: "do not include a trailing zero character"
+	if len(passwordUTF16) > 0 && passwordUTF16[len(passwordUTF16)-1] == 0 {
+		passwordUTF16 = passwordUTF16[:len(passwordUTF16)-1]
+		logging.Log(debug, "Removed null terminator from UTF16 password")
+	}
+
+	// Log first few characters for debugging (only in hex to avoid exposing password)
+	if len(passwordUTF16) >= 4 {
+		logging.Log(debug, "Password UTF16 first 4 chars (hex):", fmt.Sprintf("%04x %04x %04x %04x",
+			passwordUTF16[0], passwordUTF16[1], passwordUTF16[2], passwordUTF16[3]))
+	}
+
+	// Convert UTF-16 to bytes (WITHOUT null terminator)
+	passwordBytes := make([]byte, len(passwordUTF16)*2)
+	for i, r := range passwordUTF16 {
+		passwordBytes[i*2] = byte(r)
+		passwordBytes[i*2+1] = byte(r >> 8)
+	}
+	logging.Log(debug, "Password converted to UTF16, bytes length:", len(passwordBytes), "(without null terminator)")
+
+	if len(passwordBytes) > CRED_MAX_CREDENTIAL_BLOB_SIZE {
+		logging.Log(true, "ERROR: Password too long:", len(passwordBytes), "max:", CRED_MAX_CREDENTIAL_BLOB_SIZE)
+		return fmt.Errorf("password too long (max %d bytes)", CRED_MAX_CREDENTIAL_BLOB_SIZE)
+	}
+
+	// Use CRED_TYPE_DOMAIN_PASSWORD for Windows Login Info
+	cred := &credential{
+		Type:               CRED_TYPE_DOMAIN_PASSWORD,
+		TargetName:         targetName,
+		CredentialBlobSize: uint32(len(passwordBytes)),
+		CredentialBlob:     &passwordBytes[0],
+		Persist:            CRED_PERSIST_LOCAL_MACHINE,
+		UserName:           userNamePtr,
+	}
+
+	logging.Log(debug, "Credential struct created:")
+	logging.Log(debug, "  Type:", cred.Type, "(CRED_TYPE_DOMAIN_PASSWORD)")
+	logging.Log(debug, "  CredentialBlobSize:", cred.CredentialBlobSize)
+	logging.Log(debug, "  Persist:", cred.Persist, "(CRED_PERSIST_LOCAL_MACHINE)")
+
+	logging.Log(debug, "Calling CredWriteW...")
+	ret, _, err := procCredWriteW.Call(
+		uintptr(unsafe.Pointer(cred)),
+		0,
+	)
+
+	logging.Log(debug, "CredWriteW returned - ret:", ret, "err:", err)
+
+	if ret == 0 {
+		logging.Log(true, "ERROR: CredWriteW failed - return value:", ret)
+		logging.Log(true, "ERROR: System error:", err)
+		logging.Log(true, "ERROR: Error code:", err.(syscall.Errno))
+		return fmt.Errorf("failed to store credential for %s: %w (code: %d)", hostname, err, err.(syscall.Errno))
+	}
+
+	logging.Log(debug, "SUCCESS: Credential stored successfully")
 	return nil
 }
 
-// StoreGenericCredential stores a generic RDP credential for a username
-func (cm *CredentialManager) StoreGenericCredential(username, password string) error {
-	debug := false
-
-	// Use a generic target that works with RDP
-	target := fmt.Sprintf("TERMSRV/RDP_%s", username)
-
-	cmd := exec.Command("cmdkey", "/generic:"+target, "/user:"+username, "/pass:"+password)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to store generic credential: %w, output: %s", err, string(output))
-	}
-
-	logging.Log(debug, "Successfully stored generic credential for user", username, "at target", target)
-	return nil
-}
-
-// TestCredentialStorage tests if credential storage is working
-func (cm *CredentialManager) TestCredentialStorage() error {
-	testTarget := "TERMSRV/LaunchRDP_Test"
-	testUser := "testuser"
-	testPass := "testpass"
-
-	// Store test credential
-	cmd := exec.Command("cmdkey", "/generic:"+testTarget, "/user:"+testUser, "/pass:"+testPass)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to store test credential: %w, output: %s", err, string(output))
-	}
-
-	// Delete test credential
-	cmd = exec.Command("cmdkey", "/delete:"+testTarget)
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to delete test credential: %w, output: %s", err, string(output))
-	}
-
-	return nil
-} // DeleteCredential deletes a credential from Windows Credential Manager
-func (cm *CredentialManager) DeleteCredential(hostname string) error {
-	// Use /delete for domain credentials
-	cmd := exec.Command("cmdkey", "/delete:"+hostname)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to delete credential: %w, output: %s", err, string(output))
-	}
-
-	return nil
-}
-
-// ListCredentials lists stored credentials (for verification)
-func (cm *CredentialManager) ListCredentials() ([]string, error) {
-	cmd := exec.Command("cmdkey", "/list")
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list credentials: %w", err)
-	}
-
-	lines := strings.Split(string(output), "\n")
-	var credentials []string
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Target: TERMSRV/") {
-			// Extract hostname from "Target: TERMSRV/hostname"
-			target := strings.TrimPrefix(line, "Target: TERMSRV/")
-			credentials = append(credentials, target)
-		}
-	}
-
-	return credentials, nil
-}
-
-// HasCredential checks if a credential exists for the given hostname
-func (cm *CredentialManager) HasCredential(hostname string) bool {
-	credentials, err := cm.ListCredentials()
-	if err != nil {
-		return false
-	}
-
-	for _, cred := range credentials {
-		if cred == hostname {
+// containsBackslash checks if string contains a backslash
+func containsBackslash(s string) bool {
+	for _, c := range s {
+		if c == '\\' {
 			return true
 		}
 	}
-
 	return false
+}
+
+// DeleteCredential deletes a credential from Windows Credential Manager using native API
+func (cm *CredentialManager) DeleteCredential(hostname string) error {
+	debug := true
+	logging.Log(debug, "=== DeleteCredential START ===")
+	logging.Log(debug, "Deleting credential for hostname:", hostname)
+
+	targetString := "TERMSRV/" + hostname
+	logging.Log(debug, "Target string:", targetString)
+
+	targetName, err := syscall.UTF16PtrFromString(targetString)
+	if err != nil {
+		logging.Log(true, "ERROR: Failed to convert target name to UTF16:", err)
+		return fmt.Errorf("failed to convert target name: %v", err)
+	}
+
+	logging.Log(debug, "Calling CredDeleteW...")
+	ret, _, err := procCredDeleteW.Call(
+		uintptr(unsafe.Pointer(targetName)),
+		uintptr(CRED_TYPE_DOMAIN_PASSWORD),
+		0,
+	)
+
+	logging.Log(debug, "CredDeleteW returned - ret:", ret, "err:", err)
+
+	if ret == 0 {
+		logging.Log(true, "ERROR: CredDeleteW failed - return value:", ret)
+		logging.Log(true, "ERROR: System error:", err)
+		if errno, ok := err.(syscall.Errno); ok {
+			logging.Log(true, "ERROR: Error code:", errno)
+		}
+		return fmt.Errorf("failed to delete credential: %w", err)
+	}
+
+	logging.Log(debug, "SUCCESS: Credential deleted successfully")
+	logging.Log(debug, "=== DeleteCredential END ===")
+	return nil
 }
 
 // EncryptPasswordDPAPI encrypts a password using Windows DPAPI (most secure for Windows)
 // DPAPI (Data Protection API) ties encryption to the current user + machine
 // Only the same user on the same machine can decrypt the data
 func (cm *CredentialManager) EncryptPasswordDPAPI(password string) (string, error) {
-	debug := false
+	debug := true
 
 	if password == "" {
 		return "", nil
@@ -241,7 +298,7 @@ func (cm *CredentialManager) EncryptPasswordDPAPI(password string) (string, erro
 
 // DecryptPasswordDPAPI decrypts a password using Windows DPAPI
 func (cm *CredentialManager) DecryptPasswordDPAPI(encryptedPassword string) (string, error) {
-	debug := false
+	debug := true
 
 	if encryptedPassword == "" {
 		return "", nil

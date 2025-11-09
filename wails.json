@@ -1,0 +1,36 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "LaunchRDP",
+  "outputfilename": "LaunchRDP",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Lancer",
+    "email": "info@lepthien.info"
+  },
+  "info": {
+    "companyName": "Lancer",
+    "productName": "LaunchRDP",
+    "productVersion": "2.0.0",
+    "copyright": "Copyright © 2025 Lancer. All rights reserved.",
+    "comments": "Modern RDP connection manager with Windows"
+  },
+  "build": {
+    "targets": [
+      {
+        "platform": "windows",
+        "arch": "amd64"
+      }
+    ],
+    "appIcon": "res/icon.png",
+    "windows": {
+      "icon": "res/icon.ico",
+      "manifest": {
+        "dpiAware": true,
+        "useCommonControlsV6": true
+      }
+    }
+  }
+}
