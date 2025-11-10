@@ -71,17 +71,41 @@ function Invoke-WailsBuild {
     $version = Update-Version
     Write-Host "Building LaunchRDP v$($version.String) with Wails..." -ForegroundColor Cyan
     
+    # Prepare icons in build directory (required by Wails)
+    Write-Host "Preparing icons..." -ForegroundColor Yellow
+    if (-not (Test-Path "build")) { New-Item -ItemType Directory -Path "build" -Force | Out-Null }
+    if (-not (Test-Path "build\windows")) { New-Item -ItemType Directory -Path "build\windows" -Force | Out-Null }
+    Copy-Item "res\appicon.png" -Destination "build\appicon.png" -Force
+    Copy-Item "res\icon.ico" -Destination "build\windows\icon.ico" -Force
+    Write-Host "Icons copied to build directory" -ForegroundColor Green
+    
     go mod tidy
     wails generate
     if ($LASTEXITCODE -ne 0) { Write-Host "Failed to generate bindings" -ForegroundColor Red; exit 1 }
     
-    wails build -clean
+    wails build -clean -nsis
     if ($LASTEXITCODE -eq 0) {
         $exePath = "build\bin\LaunchRDP.exe"
         if (Test-Path $exePath) {
             $sizeMB = [math]::Round((Get-Item $exePath).Length / 1MB, 2)
             Write-Host "BUILD SUCCESSFUL!" -ForegroundColor Green
-            Write-Host "LaunchRDP.exe v$($version.String) created ($sizeMB MB)" -ForegroundColor Green          
+            Write-Host "LaunchRDP.exe v$($version.String) created ($sizeMB MB)" -ForegroundColor Green
+            
+            ## Clear Windows icon cache - activate only when needed
+            #Write-Host "Clearing Windows icon cache..." -ForegroundColor Yellow
+            #taskkill /f /im explorer.exe
+            #ie4uinit.exe -ClearIconCache
+            #Remove-Item "$env:LOCALAPPDATA\IconCache.db" -Force -ErrorAction SilentlyContinue
+            #Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\iconcache*.db" -Force -ErrorAction SilentlyContinue
+            #Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*.db" -Force -ErrorAction SilentlyContinue
+            #start explorer.exe
+            #Write-Host "Icon cache cleared" -ForegroundColor Green
+            
+            # Clean up temporary build artifacts (keep only bin folder with exe)
+            Write-Host "Cleaning temporary build files..." -ForegroundColor Yellow
+            #if (Test-Path "build\windows") { Remove-Item "build\windows" -Recurse -Force -ErrorAction SilentlyContinue }
+            #if (Test-Path "build\appicon.png") { Remove-Item "build\appicon.png" -Force -ErrorAction SilentlyContinue }
+            Write-Host "Temporary files cleaned" -ForegroundColor Green
         }
     }
     else {
