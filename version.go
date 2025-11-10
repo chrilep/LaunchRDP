@@ -5,7 +5,7 @@ import "github.com/chrilep/LaunchRDP/app/logging"
 const (
 	AppName    = "LaunchRDP"
 	ID         = "com.chrilep.launchrdp"
-	Version    = "2.0.0.3"
+	Version    = "2.0.1.41"
 	Author     = "Lancer"
 	Repository = "https://github.com/chrilep/LaunchRDP"
 )

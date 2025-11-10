@@ -13,7 +13,7 @@
   "info": {
     "companyName": "Lancer",
     "productName": "LaunchRDP",
-    "productVersion": "2.0.0",
+    "productVersion": "2.0.1",
     "copyright": "Copyright © 2025 Lancer. All rights reserved.",
     "comments": "Modern RDP connection manager with Windows"
   },
@@ -24,9 +24,7 @@
         "arch": "amd64"
       }
     ],
-    "appIcon": "res/icon.png",
     "windows": {
-      "icon": "res/icon.ico",
       "manifest": {
         "dpiAware": true,
         "useCommonControlsV6": true
