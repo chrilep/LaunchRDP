@@ -1,10 +1,12 @@
 # ============================================
 # Wails Framework
 # ============================================
-# Build outputs
+# Build outputs (all generated automatically)
 build/bin/
-build/appicon.png
-*.syso
+build/windows/*.json
+build/windows/*.manifest
+build/windows/installer/tmp
+build/windows/installer/wails_tools.nsh
 
 # Wails generated bindings (keep in version control)
 # frontend/wailsjs/ is auto-generated but should be committed
@@ -77,19 +79,6 @@ LaunchRDP
 # Local History for Visual Studio Code
 .history/
 .ionide/
-
-# JetBrains IDEs (GoLand, WebStorm, etc.)
-.idea/
-*.iml
-*.iws
-*.ipr
-
-# Visual Studio
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
 
 # ============================================
 # Operating System Files
