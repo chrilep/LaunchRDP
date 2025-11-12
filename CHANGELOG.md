@@ -5,7 +5,7 @@ All notable changes to LaunchRDP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0.3] - 2025-11-09
+## [2.0.1] - 2025-11-09
 
 ### Major Changes
 - **Complete migration from Gin HTTP server to Wails v2 framework**
@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.4.0.1] - 2025-11-06
+## [1.4.0] - 2025-11-06
 
 ### Added
 - Backend logging integration for JavaScript console messages
@@ -94,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0.7] - 2025-11-05
+## [1.3.0] - 2025-11-05
 
 ### Changed
 - Internal improvements and optimizations
@@ -102,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0.1] - 2025-11-05
+## [1.3.0] - 2025-11-05
 
 ### Added
 - Configured start position and size for RDP windows
@@ -115,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.2.0.7] - 2025-11-04
+## [1.2.0] - 2025-11-04
 
 ### Added
 - Enhanced type exclusions in credential handling
@@ -127,7 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.1.0.29] - 2025-11-04
+## [1.1.0] - 2025-11-04
 
 ### Added
 - Initial credential type exclusions
@@ -191,7 +191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
-- **v2.0.0** - Major Wails v2 migration, native desktop app, RDP window reuse, native credential API
+- **v2.0.1** - Major Wails v2 migration, native desktop app, RDP window reuse, native credential API
 - **v1.4.0** - Backend logging improvements
 - **v1.3.0** - Window position and size configuration
 - **v1.2.0** - Credential handling enhancements
@@ -202,7 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Notes
 
-### From v1.x to v2.0.0
+### From v1.x to v2.0.1
 
 **Breaking Changes:**
 - Application now runs as native desktop app (no HTTP server)
