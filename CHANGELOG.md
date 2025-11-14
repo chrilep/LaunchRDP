@@ -5,28 +5,6 @@ All notable changes to LaunchRDP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- **Enterprise Deployment Support**
-  - Professional NSIS installer with silent installation support
-  - Silent install via `/S` parameter for SCCM/Intune deployment
-  - Optional desktop shortcut creation during installation
-  - Multi-user data cleanup options in uninstaller
-  - Group Policy (GPO) deployment compatible
-  - WebView2 runtime auto-detection and installation
-
-- **Build System Enhancements**
-  - Automated version management with `version.go` as single source of truth
-  - PowerShell build script (`build.ps1`) with version increment workflow
-  - Automatic icon preparation and integration
-  - NSIS installer generation via `wails build -nsis`
-
-### Changed
-- Improved build process reliability and error handling
-- Enhanced installer user experience with single-page UI
-- Optimized installer size (~10.3 MB)
-
 ## [2.0.1] - 2025-11-09
 
 ### Major Changes
@@ -36,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Direct Go-to-JavaScript bindings for improved performance
 
 ### Added
+- **Enterprise Deployment Support**
+  - Professional NSIS installer with silent installation support
+  - Silent install via `/S` parameter for SCCM/Intune deployment
+  - Optional desktop shortcut creation during installation
+  - Multi-user data cleanup options in uninstaller
+  - Group Policy (GPO) deployment compatible
+  - WebView2 runtime auto-detection and installation
+  - Installer size optimized to ~10.3 MB
+
 - **RDP Window Reuse System**
   - Automatically detects existing RDP connections by address
   - Brings existing windows to front instead of launching duplicates
@@ -61,9 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Build System Improvements**
   - `version.go` as single source of truth for version management
-  - PowerShell build script with automatic wails.json synchronization
-  - Comprehensive BUILD.md documentation
+  - PowerShell build script (`build.ps1`) with automatic wails.json synchronization
+  - Automatic icon preparation and integration into build directory
+  - NSIS installer generation via `wails build -nsis`
   - Clean version increment workflow (auto-increment build number)
+  - Comprehensive BUILD.md documentation
 
 ### Changed
 - Removed all popup notifications for cleaner UI experience
