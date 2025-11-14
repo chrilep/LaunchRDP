@@ -5,6 +5,28 @@ All notable changes to LaunchRDP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Enterprise Deployment Support**
+  - Professional NSIS installer with silent installation support
+  - Silent install via `/S` parameter for SCCM/Intune deployment
+  - Optional desktop shortcut creation during installation
+  - Multi-user data cleanup options in uninstaller
+  - Group Policy (GPO) deployment compatible
+  - WebView2 runtime auto-detection and installation
+
+- **Build System Enhancements**
+  - Automated version management with `version.go` as single source of truth
+  - PowerShell build script (`build.ps1`) with version increment workflow
+  - Automatic icon preparation and integration
+  - NSIS installer generation via `wails build -nsis`
+
+### Changed
+- Improved build process reliability and error handling
+- Enhanced installer user experience with single-page UI
+- Optimized installer size (~10.3 MB)
+
 ## [2.0.1] - 2025-11-09
 
 ### Major Changes
@@ -159,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Window Configuration**
   - Custom window sizes per host
   - Position configuration
-  - Multi-monitor support
+  - Multi-monitor support in fullscreen mode
   - Fullscreen and windowed modes
 
 - **Advanced Settings**
@@ -191,6 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
+- **v2.0.1+** (Unreleased) - Enterprise deployment support, NSIS installer, silent install capability
 - **v2.0.1** - Major Wails v2 migration, native desktop app, RDP window reuse, native credential API
 - **v1.4.0** - Backend logging improvements
 - **v1.3.0** - Window position and size configuration
@@ -202,7 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Notes
 
-### From v1.x to v2.0.1
+### From v1.x to v2.0.1+
 
 **Breaking Changes:**
 - Application now runs as native desktop app (no HTTP server)
@@ -212,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Migration Steps:**
 1. Backup your data folder (typically `%APPDATA%\Lancer\LaunchRDP\`)
-2. Install v2.0.0
+2. Install v2.0.1+ using NSIS installer or portable executable
 3. First launch will automatically migrate existing data
 4. Verify all hosts and users are present
 5. Test RDP connections
@@ -222,6 +245,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native Windows credential integration
 - Improved window management
 - Cleaner UI without popups
+- Enterprise deployment support with silent installation
+- Professional NSIS installer package
 
 ---
 
