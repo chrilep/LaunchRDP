@@ -64,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed unnecessary DPAPI decryption on connection launch
   - Host editing properly updates credentials in Credential Manager
 
+- Enhanced installer user experience
+  - Single-page UI combining directory selection and options
+  - Improved build process reliability and error handling
+
 ### Removed
 - **System User / Pass-through Authentication**
   - Removed "Current Windows User" functionality (incompatible with Microsoft Accounts)
@@ -202,8 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
-- **v2.0.1+** (Unreleased) - Enterprise deployment support, NSIS installer, silent install capability
-- **v2.0.1** - Major Wails v2 migration, native desktop app, RDP window reuse, native credential API
+- **v2.0.1** - Major Wails v2 migration, native desktop app, RDP window reuse, native credential API, enterprise deployment with NSIS installer
 - **v1.4.0** - Backend logging improvements
 - **v1.3.0** - Window position and size configuration
 - **v1.2.0** - Credential handling enhancements
@@ -214,7 +217,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Notes
 
-### From v1.x to v2.0.1+
+### From v1.x to v2.0.1
 
 **Breaking Changes:**
 - Application now runs as native desktop app (no HTTP server)
@@ -224,7 +227,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Migration Steps:**
 1. Backup your data folder (typically `%APPDATA%\Lancer\LaunchRDP\`)
-2. Install v2.0.1+ using NSIS installer or portable executable
+2. Install v2.0.1 using NSIS installer or portable executable
 3. First launch will automatically migrate existing data
 4. Verify all hosts and users are present
 5. Test RDP connections
