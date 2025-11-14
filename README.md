@@ -9,9 +9,10 @@
 A fast, secure, and user-friendly Remote Desktop Protocol (RDP) connection manager built with Wails v2 and Go.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.1-green.svg)](CHANGELOG.md)
 [![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/wails-v2.10.2-blue.svg)](https://wails.io/)
+[![Enterprise Ready](https://img.shields.io/badge/enterprise-ready-orange.svg)](#-enterprise-deployment)
 
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Building](#-building) • [Changelog](CHANGELOG.md)
 
@@ -25,6 +26,7 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 
 - ✅ **Native Windows Integration** - Built with Wails v2, no HTTP server overhead
 - ✅ **Secure Credential Storage** - Windows Credential Manager + DPAPI encryption
+- ✅ **Enterprise Ready** - NSIS installer with silent deployment for SCCM/Intune
 - ✅ **Smart Window Management** - Automatic RDP window reuse, position persistence
 - ✅ **Clean Modern UI** - Dark mode support, responsive design
 - ✅ **Zero Configuration** - Works out of the box, no complex setup
@@ -32,6 +34,8 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 **Perfect for:**
 - IT Professionals managing multiple servers
 - System administrators with frequent RDP connections
+- Enterprise environments requiring automated deployment
+- Organizations using SCCM, Intune, or GPO for software distribution
 - Anyone tired of typing credentials repeatedly
 - Users seeking a modern replacement for outdated RDP managers
 
@@ -50,7 +54,7 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 - 📐 **Custom Positioning** - Save window positions per connection
 - 📏 **Size Presets** - Configure window dimensions for each host
 - 🖼️ **Fullscreen Mode** - Toggle between windowed and fullscreen
-- 🖥️ **Multi-Monitor** - Full multi-monitor support
+- 🖥️ **Multi-Monitor** - Multi-monitor support in fullscreen mode
 
 ### Advanced Options
 - 📋 **Clipboard Sharing** - Seamless copy/paste between local and remote
@@ -61,8 +65,15 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 ### Security & Privacy
 - 🔒 **DPAPI Encryption** - Windows Data Protection API for stored passwords
 - 🛡️ **Native Credential Storage** - Leverages Windows Credential Manager
-- 🚫 **No Cloud Sync** - All data stays on your local machine
+- � **No Cloud Sync** - All data stays on your local machine
 - 🔐 **Domain Support** - Full support for domain credentials
+
+### Enterprise & Deployment
+- 📦 **NSIS Installer** - Professional Windows installer package
+- 🤖 **Silent Install** - Unattended deployment with `/S` parameter
+- 🏢 **SCCM/Intune Ready** - Enterprise deployment compatible
+- 🗑️ **Multi-User Cleanup** - Optional user data removal during uninstall
+- 📋 **Desktop Shortcut** - Optional shortcut creation during setup
 
 ---
 
@@ -78,13 +89,30 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 
 ## 🚀 Installation
 
-### Option 1: Download Release (Recommended)
+### Option 1: NSIS Installer (Recommended)
+
+1. Download the latest `LaunchRDP-x.x.x-Installer.exe` from [Releases](https://github.com/chrilep/LaunchRDP/releases)
+2. Run the installer
+   - Choose installation directory (default: `C:\Program Files\Lancer\LaunchRDP`)
+   - Optionally create desktop shortcut
+   - Click Install
+3. Launch from Start Menu or Desktop
+4. Your data will be stored in `%APPDATA%\Lancer\LaunchRDP\`
+
+**Installer Features:**
+- ✅ WebView2 runtime detection and automatic download
+- ✅ Desktop shortcut option
+- ✅ Start menu integration
+- ✅ Clean uninstallation with optional user data removal
+- ✅ ~10.3 MB installer size
+
+### Option 2: Portable Executable
 
 1. Download the latest `LaunchRDP.exe` from [Releases](https://github.com/chrilep/LaunchRDP/releases)
 2. Run the executable - no installation needed!
 3. Your data will be stored in `%APPDATA%\Lancer\LaunchRDP\`
 
-### Option 2: Build from Source
+### Option 3: Build from Source
 
 See [Building from Source](#-building-from-source) section below.
 
@@ -147,6 +175,68 @@ See [Building from Source](#-building-from-source) section below.
 
 ---
 
+## 🏢 Enterprise Deployment
+
+LaunchRDP is designed for enterprise environments with full support for automated deployment.
+
+### Silent Installation
+
+For unattended deployment via SCCM, Intune, or GPO:
+
+```powershell
+# Silent install to default location
+LaunchRDP-Installer.exe /S
+
+# Silent install to custom location
+LaunchRDP-Installer.exe /S /D=C:\CustomPath\LaunchRDP
+```
+
+**Silent Install Behavior:**
+- No user interaction required
+- Installs to `C:\Program Files\Lancer\LaunchRDP` (or custom path)
+- No desktop shortcut created (can be deployed separately via GPO)
+- WebView2 automatically downloaded if missing
+- Returns exit code 0 on success
+
+### SCCM/Intune Deployment Package
+
+**Detection Method:**
+- File: `C:\Program Files\Lancer\LaunchRDP\LaunchRDP.exe`
+- Product Version: `2.0.1` (or later)
+
+**Install Command:**
+```
+LaunchRDP-Installer.exe /S
+```
+
+**Uninstall Command:**
+```
+"C:\Program Files\Lancer\LaunchRDP\uninstall.exe" /S
+```
+
+**Requirements:**
+- Windows 10/11 (64-bit)
+- WebView2 Runtime (auto-installs if missing)
+- ~10 MB disk space
+
+### Group Policy Deployment
+
+1. Copy installer to network share: `\\server\share\software\LaunchRDP-Installer.exe`
+2. Create GPO: Computer Configuration → Policies → Software Settings → Software Installation
+3. Add new package, select installer
+4. Configure deployment options (assigned/published)
+5. Apply to target OUs
+
+### Multi-User Environments
+
+LaunchRDP stores user data in `%APPDATA%\Lancer\LaunchRDP\`, ensuring:
+- ✅ Per-user configurations and credentials
+- ✅ No administrator rights required for normal operation
+- ✅ Credentials isolated between Windows users
+- ✅ Clean uninstall with optional user data removal
+
+---
+
 ## 🛠️ Building from Source
 
 ### Prerequisites
@@ -167,14 +257,16 @@ go install github.com/wailsapp/wails/v2/cmd/wails@latest
 git clone https://github.com/chrilep/LaunchRDP.git
 cd LaunchRDP
 
-# Build with the provided script
+# Build with the provided script (creates NSIS installer)
 .\build.ps1
 
 # Or build manually
-wails build
+wails build -nsis
 ```
 
-The executable will be created in `build/bin/LaunchRDP.exe`
+The outputs will be created in `build/bin/`:
+- `LaunchRDP.exe` - Portable executable
+- `LaunchRDP x.x.x Installer.exe` - NSIS installer package
 
 ### Development Mode
 
@@ -206,12 +298,15 @@ LaunchRDP/
 │   ├── index.html        # Main UI
 │   └── style.css         # Styling
 ├── build/                # Build outputs
+│   ├── bin/              # Compiled executables and installer
+│   └── windows/          # Windows-specific build resources
+│       └── installer/    # NSIS installer configuration
 ├── res/                  # Resources (icons)
 ├── app.go               # Main application logic
 ├── main.go              # Entry point
-├── version.go           # Version information
+├── version.go           # Version information (single source of truth)
 ├── wails.json           # Wails configuration
-└── build.ps1            # Build script
+└── build.ps1            # Automated build script with version management
 ```
 
 ---
@@ -220,16 +315,18 @@ LaunchRDP/
 
 LaunchRDP stores all data locally:
 
-- **Application Data**: `%APPDATA%\Lancer\LaunchRDP\data\`
+- **Application Data**: `%APPDATA%\Lancer\LaunchRDP\`
   - `hosts.json` - Host configurations
   - `users.json` - User credentials (DPAPI encrypted)
   - `window_state.json` - Window position and size
 
 - **Credentials**: Windows Credential Manager
-  - Target: `rdp:{hostname}`
+  - Target: `TERMSRV/{hostname}`
   - Automatically managed by the application
 
-- **Logs**: `%APPDATA%\Lancer\LaunchRDP\logs\`
+- **Logs & Temp Files**: `%LOCALAPPDATA%\Lancer\LaunchRDP\`
+  - Log files
+  - Temporary RDP files
 
 ---
 
@@ -242,6 +339,8 @@ LaunchRDP stores all data locally:
 - ✅ Added RDP window reuse functionality
 - ✅ Removed all popup notifications for cleaner UX
 - ✅ Complete English localization
+- ✅ Professional NSIS installer with enterprise deployment support
+- ✅ Credentials written to Windows Credential Manager on launch (not on edit)
 
 ### Migration Steps
 
