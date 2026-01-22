@@ -1,8 +1,6 @@
 # LaunchRDP
 
-<div align="center">
-
-![LaunchRDP](res/icon.png)
+![LaunchRDP main window](res/appExample.png)
 
 **Modern RDP Connection Manager for Windows**
 
@@ -15,8 +13,6 @@ A fast, secure, and user-friendly Remote Desktop Protocol (RDP) connection manag
 [![Enterprise Ready](https://img.shields.io/badge/enterprise-ready-orange.svg)](#-enterprise-deployment)
 
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Building](#-building) • [Changelog](CHANGELOG.md)
-
-</div>
 
 ---
 
@@ -32,6 +28,7 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 - ✅ **Zero Configuration** - Works out of the box, no complex setup
 
 **Perfect for:**
+
 - IT Professionals managing multiple servers
 - System administrators with frequent RDP connections
 - Enterprise environments requiring automated deployment
@@ -44,6 +41,7 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 ## ✨ Features
 
 ### Connection Management
+
 - 🖥️ **Multi-Host Support** - Store unlimited RDP connections
 - 👤 **User Profiles** - Manage multiple credential sets
 - 🔐 **Secure Credentials** - Native Windows Credential Manager integration
@@ -51,24 +49,28 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 - 🔄 **Window Reuse** - Automatically detects and activates existing connections
 
 ### Window & Display
+
 - 📐 **Custom Positioning** - Save window positions per connection
 - 📏 **Size Presets** - Configure window dimensions for each host
 - 🖼️ **Fullscreen Mode** - Toggle between windowed and fullscreen
 - 🖥️ **Multi-Monitor** - Multi-monitor support in fullscreen mode
 
 ### Advanced Options
+
 - 📋 **Clipboard Sharing** - Seamless copy/paste between local and remote
 - 💾 **Drive Mapping** - Share local drives with remote sessions
 - 🔌 **Custom Ports** - Configure non-standard RDP ports
 - ⚙️ **Per-Connection Settings** - Individual configuration for each host
 
 ### Security & Privacy
+
 - 🔒 **DPAPI Encryption** - Windows Data Protection API for stored passwords
 - 🛡️ **Native Credential Storage** - Leverages Windows Credential Manager
 - � **No Cloud Sync** - All data stays on your local machine
 - 🔐 **Domain Support** - Full support for domain credentials
 
 ### Enterprise & Deployment
+
 - 📦 **NSIS Installer** - Professional Windows installer package
 - 🤖 **Silent Install** - Unattended deployment with `/S` parameter
 - 🏢 **SCCM/Intune Ready** - Enterprise deployment compatible
@@ -100,6 +102,7 @@ LaunchRDP is designed as a modern alternative to legacy RDP managers like mRemot
 4. Your data will be stored in `%APPDATA%\Lancer\LaunchRDP\`
 
 **Installer Features:**
+
 - ✅ WebView2 runtime detection and automatic download
 - ✅ Desktop shortcut option
 - ✅ Start menu integration
@@ -192,6 +195,7 @@ LaunchRDP-Installer.exe /S /D=C:\CustomPath\LaunchRDP
 ```
 
 **Silent Install Behavior:**
+
 - No user interaction required
 - Installs to `C:\Program Files\Lancer\LaunchRDP` (or custom path)
 - No desktop shortcut created (can be deployed separately via GPO)
@@ -201,20 +205,24 @@ LaunchRDP-Installer.exe /S /D=C:\CustomPath\LaunchRDP
 ### SCCM/Intune Deployment Package
 
 **Detection Method:**
+
 - File: `C:\Program Files\Lancer\LaunchRDP\LaunchRDP.exe`
 - Product Version: `2.0.1` (or later)
 
 **Install Command:**
+
 ```
 LaunchRDP-Installer.exe /S
 ```
 
 **Uninstall Command:**
+
 ```
 "C:\Program Files\Lancer\LaunchRDP\uninstall.exe" /S
 ```
 
 **Requirements:**
+
 - Windows 10/11 (64-bit)
 - WebView2 Runtime (auto-installs if missing)
 - ~10 MB disk space
@@ -230,6 +238,7 @@ LaunchRDP-Installer.exe /S
 ### Multi-User Environments
 
 LaunchRDP stores user data in `%APPDATA%\Lancer\LaunchRDP\`, ensuring:
+
 - ✅ Per-user configurations and credentials
 - ✅ No administrator rights required for normal operation
 - ✅ Credentials isolated between Windows users
@@ -265,6 +274,7 @@ wails build -nsis
 ```
 
 The outputs will be created in `build/bin/`:
+
 - `LaunchRDP.exe` - Portable executable
 - `LaunchRDP x.x.x Installer.exe` - NSIS installer package
 
